@@ -1,6 +1,9 @@
 $(document).ready(function () {
+// Vars
   video = $('video').get(0);
+  keys = [97, 115, 100, 106, 107, 108, 32];
   
+// functions
   newNote = function (type) {
     var note = $('<tr><td class="timecode"></td><td class="note" contenteditable="true"></td><td class="type"></td><td class="comments">0</td><td class="likes">0</td><td class="time_added"></td><td><button>Like</button><button>Comment</button></td></tr>');
     
@@ -16,6 +19,13 @@ $(document).ready(function () {
   // Add to the log_table
     $('#log_table tbody').prepend(note);
     
+  // Add event listener
+    $('.note, button', note).on('focus', function () {
+      unbindKeys();
+    }).on('blur', function () {
+      bindKeys();
+    });
+  
   // Set focus to the note
     $('.note', note).focus();
   }
@@ -38,16 +48,6 @@ $(document).ready(function () {
     if (video.playing) video.pause();
     else video.play();
   }
-  
-  $(video).on('play', function () {
-    video.playing = true;
-  });
-  
-  $(video).on('pause', function () {
-    video.playing = false;
-  });
-  
-  keys = [97, 115, 100, 106, 107, 108, 32];
   
   bindKeys = function () {
     $(window).keypress(function (e) {
@@ -83,4 +83,19 @@ $(document).ready(function () {
   unbindKeys = function () {
     $(window).off('keypress');
   }
+  
+  
+// Event listeners
+  $(video).on('play', function () {
+    video.playing = true;
+  });
+  
+  $(video).on('pause', function () {
+    video.playing = false;
+  });
+  
+  $('')
+  
+// Do stuff
+  bindKeys();
 });
