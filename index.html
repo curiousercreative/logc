@@ -1,0 +1,98 @@
+<html>
+  <head>
+    <title>LogC - Community video logging</title>
+    <script src="http://code.jquery.com/jquery-1.10.2.min.js"></script>
+    <script>      
+      $(document).ready(function () {
+        video = $('video').get(0);
+      
+        log = function () {
+          
+        }
+        
+        trans = function () {
+        
+        }
+        
+        comment = function () {
+        
+        }
+        
+        ff = function (time) {
+          if (!time) time = 5000;
+          video.currentTime = video.currentTime + time;
+        }
+        
+        rr = function (time) {
+          if (!time) time = 5000;
+          video.currentTime = video.currentTime - time;
+        }
+        
+        pp = function () {
+          if (video.playing) video.pause();
+          else video.play();
+        }
+        
+        $(video).on('play', function () {
+          video.playing = true;
+        });
+        
+        $(video).on('pause', function () {
+          video.playing = false;
+        });
+        
+        keys = [97, 115, 100, 106, 107, 108, 32];
+        
+        $(window).keypress(function (e) {
+          if (keys.indexOf(e.which) != -1) {
+            e.preventDefault();
+            switch (e.which) {
+              case 97: //a
+                new log();
+                break;
+              case 115: //s
+                new trans();
+                break;
+              case 100: //d
+                new comment();
+                break;
+              case 106: //j
+                rr();
+                break;
+              case 32:
+                pp();
+                break;
+              case 107: //k
+                pp();
+                break;
+              case 108: //l
+                ff();
+                break;
+            }
+          }
+        });
+      });
+    </script>
+  </head>
+  <body>
+    <video controls>
+      <source src="http://s3.amazonaws.com/hitrecord-prod/record_attachments/1366986/encoded/web_sd/curiouser-1366986.mp4" type="video/mp4">
+    </video>
+    
+    <h1>Legend</h1>
+    <dl>
+      <dt>k</dt>
+        <dd>Play/pause</dd>
+      <dt>j</dt>
+        <dd>skip back 5 seconds</dd>
+      <dt>l</dt>
+        <dd>skip forward 5 seconds</dd>
+      <dt>a</dt>
+        <dd>add log note</dd>
+      <dt>d</dt>
+        <dd>add transcription</dd>
+      <dt>s</dt>
+        <dd>add editorial comment</dd>
+    </dl>
+  </body>
+</html>
