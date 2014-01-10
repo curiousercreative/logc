@@ -1,7 +1,9 @@
 $(document).ready(function () {
 // Vars
   video = $('video').get(0);
-  keys = [97, 115, 100, 106, 107, 108, 32];
+  keys = [65, 83, 68, 74, 75, 76, 32, 37, 39];
+  editingField = false;
+  defaultPlaybackRate = 1.0;
   
 // functions
   newNote = function (type) {
@@ -20,10 +22,10 @@ $(document).ready(function () {
     $('#log_table tbody').prepend(note);
     
   // Add event listener
-    $('.note, button', note).on('focus', function () {
-      unbindKeys();
+    $('.note', note).on('focus', function () {
+      editingField = true;
     }).on('blur', function () {
-      bindKeys();
+      editingField = false;
     });
   
   // Set focus to the note
@@ -45,45 +47,73 @@ $(document).ready(function () {
   }
   
   pp = function () {
-    if (video.playing) video.pause();
+    if (video.playing) {
+      video.pause();
+      resetPlaybackRate();
+    }
     else video.play();
   }
   
+  faster = function () {
+    setPlaybackRate(video.playbackRate + 0.1);
+  }
+  
+  slower = function () {
+    setPlaybackRate(video.playbackRate - 0.1);
+  }
+  
+  resetPlaybackRate = function () {
+    video.playbackRate = defaultPlaybackRate;
+  }
+  
+  setPlaybackRate = function (val) {
+    video.playbackRate = val;
+  }
+  
   bindKeys = function () {
-    $(window).keypress(function (e) {
+    $(window).keydown(function (e) {
       if (keys.indexOf(e.which) != -1) {
-        e.preventDefault();
-        switch (e.which) {
-          case 97: //a
-            newNote('log');
-            break;
-          case 115: //s
-            newNote('transcription');
-            break;
-          case 100: //d
-            //new comment();
-            break;
-          case 106: //j
-            rr();
-            break;
-          case 32:
-            pp();
-            break;
-          case 107: //k
-            pp();
-            break;
-          case 108: //l
-            ff();
-            break;
+        if (!editingField || e.metaKey) {
+          e.preventDefault();
+          switch (e.which) {
+            case 65: //a
+              newNote('log');
+              break;
+            case 83: //s
+              newNote('transcription');
+              break;
+            case 68: //d
+              //new comment();
+              break;
+            case 74: //j
+              slower();
+              break;
+            case 75: //k
+              pp();
+              break;
+            case 32: //space
+              pp();
+              break;
+            case 76: //l
+              faster();
+              break;
+            case 37: //<-
+              if (e.shiftKey) rr(30);
+              else rr();
+              break;
+            case 39: //->
+              if (e.shiftKey) ff(30);
+              else ff();
+              break;
+          }  
         }
       }
     }); 
   }
   
   unbindKeys = function () {
-    $(window).off('keypress');
+    $(window).off('keydown');
   }
-  
   
 // Event listeners
   $(video).on('play', function () {
