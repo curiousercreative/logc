@@ -2,7 +2,10 @@
   <head>
     <title>LogC - Community video logging</title>
     <script src="http://code.jquery.com/jquery-1.10.2.min.js"></script>
+    <script src="footable/footable.js"></script>
     <script src="logc.js"></script>
+    
+    <link href="footable/footable.css" rel="stylesheet" />
     <link href="logc.css" rel="stylesheet" />
   </head>
   <body>
@@ -11,11 +14,14 @@
         <video id="video" controls>
           <source src="http://s3.amazonaws.com/hitrecord-prod/record_attachments/1366986/encoded/web_sd/curiouser-1366986.mp4" type="video/mp4">
         </video>
+        <div id="playback_rate" contenteditable="true" tabIndex="-1">1.0</div>
       </div> <!-- end #video_container -->
     
       <div class="half col" id="legend">
         <h1>Legend</h1>
         *Hold ctrl or cmd while editing a log or transcription note to access these hotkeys
+        *Playback speeds will reset to a default playback speed on pause. You can manually
+        set this default in the top right of the video
         <dl>
           <dt>j</dt>
             <dd>decrease playback speed 10%</dd>
@@ -37,15 +43,17 @@
       </div> <!-- end #legend -->
     </div> <!-- end .col_container -->
     
-    <table id="log_table">
+    <table id="log_table" class="footable">
       <thead>
         <th class="timecode">Timecode</th>
         <th class="note">Note</th>
         <th class="type">Type</th>
         <th class="comments">Comments</th>
         <th class="likes">Likes</th>
-        <th class="time_added">Time added</th>
-        <th class="actions">Like or Comment</th>
+        <th class="created">Created</th>
+        <th class="modified">Modified</th>
+        <th class="actions">Actions</th>
+        <th class="status">Status</th>
       </thead>
       <tbody>
       </tbody>

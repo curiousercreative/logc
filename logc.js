@@ -6,15 +6,41 @@ $(document).ready(function () {
   defaultPlaybackRate = 1.0;
   
 // functions
+  // log
+  formatTimecode = function (secs) {
+    time = '';
+  
+  // Hours
+    var hours = parseInt(secs/3600);
+    hours = hours > 9 ? hours : "0"+hours;
+    secs -= hours*360;
+    
+  // Minutes
+    var minutes = parseInt(secs/60);
+    minutes = minutes > 9 ? minutes : "0"+minutes;
+    secs -= minutes*60;
+    
+  // Seconds
+    var seconds = parseInt(secs);
+    seconds = seconds > 9 ? seconds : "0"+seconds;
+    secs -= seconds;
+    
+  // Frames
+    var frames = Math.round(24*secs);
+    frames = frames > 9 ? frames : "0"+frames;
+    
+    return hours+":"+minutes+":"+seconds+":"+frames;
+  }
+  
   newNote = function (type) {
-    var note = $('<tr><td class="timecode"></td><td class="note" contenteditable="true"></td><td class="type"></td><td class="comments">0</td><td class="likes">0</td><td class="time_added"></td><td><button>Like</button><button>Comment</button></td></tr>');
+    var note = $('<tr><td class="timecode"></td><td class="note" contenteditable="true"></td><td class="type"></td><td class="comments">0</td><td class="likes">0</td><td class="created"></td><td class="modified"></td><td><button>Like</button><button>Comment</button></td><td class="status">Local Only</td></tr>');
     
   // Add class to the row
     $(note).addClass(type).find('.type').html(type);
     
   // Add a timecode
-    $('.timecode', note).html(video.currentTime);
-    
+    $('.timecode', note).attr('data-value', video.currentTime).html(formatTimecode(video.currentTime));    
+
   // Add a timestamp
     $('.time_added', note).html(Math.round(new Date().getTime() / 1000));
     
@@ -36,6 +62,7 @@ $(document).ready(function () {
   
   }
   
+  // player 
   ff = function (time) {
     if (!time) time = 5;
     video.currentTime = video.currentTime + time;
@@ -63,10 +90,12 @@ $(document).ready(function () {
   }
   
   resetPlaybackRate = function () {
-    video.playbackRate = defaultPlaybackRate;
+    setPlaybackRate(defaultPlaybackRate);
   }
   
   setPlaybackRate = function (val) {
+    val = parseInt(val * 10) / 10;
+    $('#playback_rate').html(val);
     video.playbackRate = val;
   }
   
@@ -124,7 +153,13 @@ $(document).ready(function () {
     video.playing = false;
   });
   
-  $('')
+  $('#playback_rate').on('blur', function () {
+    var val = parseFloat($(this).html());
+    val = val > 0 && val < 8 ? val : 1.0;
+    
+    defaultPlaybackRate = val;
+    setPlaybackRate(val);
+  });
   
 // Do stuff
   bindKeys();

@@ -186,12 +186,20 @@ p:last-child {
 
 /* Real stuff */
 #video_container {
-	
+	position: relative;
 }
 
 #video {
 	max-width: 100%;
 	max-height: 100%;
+}
+
+#playback_rate {
+	position: absolute;
+	top: 5px;
+	right: 5px;
+	background: white;
+	padding: 5px;
 }
 
 #legend dt {
