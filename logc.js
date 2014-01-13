@@ -21,7 +21,7 @@ $(document).ready(function () {
     this.Row = function (type, id, fields, inLocalStorage, inDB) {
     // props
       this.type = type;
-      this.id = id ? id : log.getTimestamp();
+      this.id = id ? id : new Date().getTime();
       this.inLocalStorage = inLocalStorage ? true : false;
       this.inDB = inDB ? true : false;
       this.comments = new Array(); // An array of all comments
@@ -29,7 +29,7 @@ $(document).ready(function () {
     // Classes
       this.Like = function (parentRow, id, inLocalStorage, inDB) {
       // Props
-        this.id = id ? id : log.getTimestamp();
+        this.id = id ? id : new Date().getTime();
         this.parentRow = parentRow;
         this.inLocalStorage = inLocalStorage ? true : false;
         this.inDB = inDB ? true : false;
@@ -76,7 +76,7 @@ $(document).ready(function () {
       
       this.Comment = function (parentRow, id, inLocalStorage, inDB) {
       // Props
-        this.id = id ? id : log.getTimestamp();
+        this.id = id ? id : new Date().getTime();
         this.parentRow = parentRow;
         this.inLocalStorage = inLocalStorage ? true : false;
         this.inDB = inDB ? true : false;
@@ -154,8 +154,8 @@ $(document).ready(function () {
         if (!fields) {
           var fields = {
             timecode: video.currentTime,
-            created: this.id,
-            modified: this.id
+            created: Math.round(this.id/1000),
+            modified: Math.round(this.id/1000)
           }
         }
         
@@ -177,9 +177,18 @@ $(document).ready(function () {
       // Add to the log_table
         $('#log_table tbody').prepend(row);
         
+      // Add focus & blur listener for the note
+        this.addFocusBlurListener();
+          
+      // Add click and hover listener for like button
+        this.addLikeListeners();
+      
+      // Add click and hover listener for comment button
+        this.addCommentListeners();
+        
       // Set focus to the note
         if (fields.note) $('.note', row).text(fields.note);
-        else $('.note', row).focus();
+        else if (!this.inLocalStorage) $('.note', row).focus();
         
         return $(row);
       }
@@ -293,20 +302,21 @@ $(document).ready(function () {
   
   // == Contructor do
       // Loaded from the DB, exists in markup already
-      if (this.inDB) this.jObj = $('#'+this.type + this.id);
+      if (this.inDB) {
+        this.jObj = $('#'+this.type + this.id);
+      // Add focus & blur listener for the note
+        this.addFocusBlurListener();
+          
+      // Add click and hover listener for like button
+        this.addLikeListeners();
+      
+      // Add click and hover listener for comment button
+        this.addCommentListeners();
+      }
       // Loaded from localStorage
       else if (this.inLocalStorage) this.jObj = this.createTableRow(fields);
       // Creating for the first time per user request
       else this.jObj = this.createTableRow();
-      
-    // Add focus & blur listener for the note
-      this.addFocusBlurListener();
-        
-    // Add click and hover listener for like button
-      this.addLikeListeners();
-    
-    // Add click and hover listener for comment button
-      this.addCommentListeners();
       
     // Save to our array of all of this type
       log.rows.push(this);
@@ -478,6 +488,7 @@ $(document).ready(function () {
     this.saveDB = function () {
       $.ajax({
         url: 'update.php',
+        method: 'POST',
         data: this.tempStorage,
         success: function (response, status) {
           response = JSON.parse(response);
@@ -625,7 +636,15 @@ $(document).ready(function () {
   bindKeys = function () {
     $(window).keydown(function (e) {
       if (keys.indexOf(e.which) != -1) {
-        if (!editingField || e.metaKey) {
+        if (e.shiftKey) {
+          e.preventDefault();
+          switch (e.which) {
+            case 83: //s
+              log.saveDB();
+              break;
+          }
+        }
+        else if (!editingField || e.metaKey) {
           e.preventDefault();
           switch (e.which) {
             case 65: //a
