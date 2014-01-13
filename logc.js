@@ -305,7 +305,7 @@ $(document).ready(function () {
     // Hours
       var hours = parseInt(secs/3600);
       hours = hours > 9 ? hours : "0"+hours;
-      secs -= hours*360;
+      secs -= hours*3600;
       
     // Minutes
       var minutes = parseInt(secs/60);
