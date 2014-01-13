@@ -13,23 +13,26 @@ $(document).ready(function () {
       'delete' : new Array()
     }
     
-    this.logs = new Array(); // An array of all Log notes indexed by created timestamp
-    this.transcriptions = new Array(); // An array of all transcriptions indexed by created timestamp
-  
+    this.logs = new Array(); // An array of all Log notes
+    this.transcriptions = new Array(); // An array of all transcriptions
+    this.likes = new Array(); // An array of all likes
+    this.comments = new Array(); // An array of all transcriptions
+    
   // Classes
-    this.Transcription = function (parentLog, fields, inLocalStorage, inDB) {
+    this.Row = function (type, parentLog, id, fields, inLocalStorage, inDB) {
     // props
+      this.type = type;
       this.log = parentLog;
-      this.id = fields ? fields.id : Math.round(new Date().getTime() / 1000);
+      this.id = id ? id : this.log.getTimestamp();
       this.inLocalStorage = inLocalStorage ? true : false;
       this.DB = inDB ? true : false;
       
-    // methods
-      this.save = function (action) {
+    // storage methods
+      this.autosave = function (action, fields) {
       // Add me to the correct storage array for DB updating
         if (!this.inDB) {
           this.log.tempStorage[action].push({
-            'type': 'transcriptions',
+            'type': this.type,
             'id': this.id,
             'fields': {
               'timecode': $('.timecode', this.jObj).attr('data-value'),
@@ -42,7 +45,7 @@ $(document).ready(function () {
         }
         
       // Add me to a general array of my type
-        this.log.transcriptions.push(this);
+        this.log[type+"s"].push(this);
         
       // Ask the log to update localStorage
         if (!this.inLocalStorage) this.log.updateLocalStorage(action);
@@ -50,57 +53,14 @@ $(document).ready(function () {
     
     // Create the row in the log table in browser
       // Loaded from the DB, exists in markup already
-      if (this.inDB) this.jObj = $('#trans'+id);
+      if (this.inDB) this.jObj = $('#'+this.type + this.id);
       // Loaded from localStorage
-      else if (this.inLocalStorage) this.jObj = this.log.createRow('transcription', this.id, fields);
+      else if (this.inLocalStorage) this.jObj = this.log.createRow(this.type, this.id, fields);
       // Creating for the first time per user request
-      else this.jObj = this.log.createRow('transcription', this.id);
+      else this.jObj = this.log.createRow(this.type, this.id);
       
     // Save this transcription to the created array & transcription array
-      this.save('create');
-    }
-    
-    this.LogNote = function (parentLog, fields, inLocalStorage, inDB) {
-    // props
-      this.log = parentLog;
-      this.id = fields ? fields.id : Math.round(new Date().getTime() / 1000);
-      this.inLocalStorage = inLocalStorage ? true : false;
-      this.DB = inDB ? true : false;
-      
-    // methods
-      this.save = function (action) {
-      // Add me to the correct storage array for DB updating
-        if (!this.inDB) {
-          this.log.tempStorage[action].push({
-            'type': 'log_notes',
-            'id': this.id,
-            'fields': {
-              'timecode': $('.timecode', this.jObj).attr('data-value'),
-              'note': $('.note', this.jObj).text(),
-              'created': this.id,
-              'modified': this.id,
-              'userId': 0
-            }
-          });
-        }
-        
-      // Add me to a general array of my type
-        this.log.logs.push(this);
-        
-      // Ask the log to update localStorage
-        if (!this.inLocalStorage) this.log.updateLocalStorage(action);
-      }
-    
-    // Create the row in the log table in browser
-      // Loaded from the DB, exists in markup already
-      if (this.inDB) this.jObj = $('#log'+id);
-      // Loaded from localStorage
-      else if (this.inLocalStorage) this.jObj = this.log.createRow('log', this.id, fields);
-      // Creating for the first time per user request
-      else this.jObj = this.log.createRow('log', this.id);
-      
-    // Save this transcription to the created array & transcription array
-      this.save('create');
+      this.autosave('create');
     }
     
     this.Like = function () {
@@ -113,36 +73,166 @@ $(document).ready(function () {
   
   // Methods
     // Create a row in the log table
-    this.createRow = function (type, timestamp) {
-      var note = $('<tr><td class="timecode"></td><td class="note" contenteditable="true"></td><td class="type"></td><td class="comments">0</td><td class="likes">0</td><td class="created"></td><td class="modified"></td><td><button>Like</button><button>Comment</button></td><td class="status">Local Only</td></tr>');
+    this.createRow = function (type, id, fields) {
+    // If this is a first time create, not loaded from storage
+      if (!fields) {
+        var fields = {
+          timecode: video.currentTime,
+          created: id,
+          modified: id
+        }
+      }
       
-    // Add class to the row
-      $(note).addClass(type).find('.type').html(type);
+      var row = $('<tr><td class="timecode"></td><td class="note" contenteditable="true"></td><td class="type"></td><td class="comments">0</td><td class="likes">0</td><td class="created"></td><td class="modified"></td><td><button>Like</button><button>Comment</button></td><td class="status">Local Only</td></tr>');
+      
+    // Add class && id to the row
+      $(row).attr('id', type+id).addClass(type).find('.type').html(type);
       
     // Add a timecode
-      $('.timecode', note).attr('data-value', video.currentTime).html(log.formatTimecode(video.currentTime));    
+      $('.timecode', row).attr('data-value', fields.timecode).html(log.formatTimecode(fields.timecode));    
   
-    // Add a timestamp
-      $('.created, .modified', note).html(timestamp);
+    // Add timestamps
+      $('.created', row).html(fields.created);      
+      $('.modified', row).html(fields.modified);
       
     // Add to the log_table
-      $('#log_table tbody').prepend(note);
+      $('#log_table tbody').prepend(row);
       
     // Add event listener
-      $('.note', note).on('focus', function () {
+      $('.note', row).on('focus', function () {
         editingField = true;
+        $(this).data('old_value', $(this).text());
       }).on('blur', function () {
         editingField = false;
+        if ($(this).data('old_value') !== $(this).text()) {
+          var id = parseInt($(this).parents('tr').attr('id'));
+          var type = $(this).parents('tr').find('.type').html()+'s';
+          var note = $(this).text();
+          var modified = log.getTimestamp();
+          
+        // Update the stored values
+          for (var x in log[type]) {
+            if (log[type][x].id == id) {
+            // remove the storage flags on this log object
+              log[type][x].inDB = false;
+              log[type][x].inLocalStorage = false;
+              
+            // autosave the update
+              log[type][x].autosave('update', {'note':note, 'modified': modified});
+            }
+          }
+          
+        // Update the table modified
+          $(this).parents('tr').find('.modified').text(modified);
+        }
       });
     
     // Set focus to the note
-      $('.note', note).focus();
+      if (fields.note) $('.note', row).text(fields.note);
+      else $('.note', row).focus();
       
-      return $(note);
+      return $(row);
     }
     // Saves tempStorage (memory) into browser's persisent localStorage 
     this.updateLocalStorage = function (action) {
       localStorage[action] = JSON.stringify(this.tempStorage[action]);
+    }
+    // Loads localStorage log objects
+    this.loadLocalStorage = function () {
+    // Load the creates
+      if (localStorage.create) {
+        var creates = JSON.parse(localStorage.create);
+        for (var x in creates) {
+          switch(creates[x].type) {
+            case 'log':
+              new this.Row('log', this, creates[x].id, creates[x].fields, true);
+              break;
+            case 'transcription':
+              new this.Row('transcription', this, creates[x].id, creates[x].fields, true);
+              break;
+            case 'like':
+              new this.Like(this, creates[x].id, creates[x].fields, true);
+              break;
+            case 'comment':
+              new this.Comment(this, creates[x].id, creates[x].fields, true);
+              break;
+          }
+        }
+      }
+      
+    // Load the updates
+      if (localStorage.update) {
+        var updates = JSON.parse(localStorage.update);
+        for (var x in updates) {
+          switch(updates[x].type) {
+            case 'log_notes':
+              for (var y in this.logs) {
+                if (this.logs[y].id == updates[x].id) {
+                  this.logs[y].updateFromStorage(updates[x].fields);
+                }
+              }
+              break;
+            case 'transcriptions':
+              for (var y in this.transcriptions) {
+                if (this.transcriptions[y].id == updates[x].id) {
+                  this.transcriptions[y].updateFromStorage(updates[x].fields);
+                }
+              }
+              break;
+            case 'likes':
+              for (var y in this.likes) {
+                if (this.likes[y].id == updates[x].id) {
+                  this.likes[y].updateFromStorage(updates[x].fields);
+                }
+              }
+              break;
+            case 'comments':
+              for (var y in this.comments) {
+                if (this.comments[y].id == updates[x].id) {
+                  this.comments[y].updateFromStorage(updates[x].fields);
+                }
+              }
+              break;
+          }
+        }
+      }
+    
+    // Load the deletes
+       if (localStorage.remove) {
+        var removes = JSON.parse(localStorage.remove);
+        for (var x in removes) {
+          switch(removes[x].type) {
+            case 'log_notes':
+              for (var y in this.logs) {
+                if (this.logs[y].id == removes[x].id) {
+                  this.logs[y].remove(removes[x].fields);
+                }
+              }
+              break;
+            case 'transcriptions':
+              for (var y in this.transcriptions) {
+                if (this.transcriptions[y].id == removes[x].id) {
+                  this.transcriptions[y].remove(removes[x].fields);
+                }
+              }
+              break;
+            case 'likes':
+              for (var y in this.likes) {
+                if (this.likes[y].id == removes[x].id) {
+                  this.likes[y].remove(removes[x].fields);
+                }
+              }
+              break;
+            case 'comments':
+              for (var y in this.comments) {
+                if (this.comments[y].id == removes[x].id) {
+                  this.comments[y].remove(removes[x].fields);
+                }
+              }
+              break;
+          }
+        }
+      }
     }
     
   // Helper methods
@@ -169,6 +259,9 @@ $(document).ready(function () {
       frames = frames > 9 ? frames : "0"+frames;
       
       return hours+":"+minutes+":"+seconds+":"+frames;
+    }
+    this.getTimestamp = function () {
+      return Math.round(new Date().getTime() / 1000); 
     }
   }
   
@@ -222,10 +315,10 @@ $(document).ready(function () {
           e.preventDefault();
           switch (e.which) {
             case 65: //a
-              new log.LogNote(log);
+              new log.Row('log', log);
               break;
             case 83: //s
-              new log.Transcription(log);
+              new log.Row('transcription', log);
               break;
             case 68: //d
               //new comment();
@@ -280,6 +373,8 @@ $(document).ready(function () {
   
 // == Do stuff
   log = new Log();
+  log.loadLocalStorage();
+  
   player = new Player();
   
   bindKeys();
