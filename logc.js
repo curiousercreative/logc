@@ -3,10 +3,10 @@ $(document).ready(function () {
   video = $('video').get(0);
   keys = [65, 83, 68, 74, 75, 76, 32, 37, 39];
   editingField = false;
-  defaultPlaybackRate = 1.0;
   
 // Classes
   Log = function () {
+  // Properties
     this.tempStorage = {
       'create' : new Array(),
       'update' : new Array(),
@@ -16,7 +16,103 @@ $(document).ready(function () {
     this.logs = new Array(); // An array of all Log notes indexed by created timestamp
     this.transcriptions = new Array(); // An array of all transcriptions indexed by created timestamp
   
-  // Create a row in the log table
+  // Classes
+    this.Transcription = function (parentLog, fields, inLocalStorage, inDB) {
+    // props
+      this.log = parentLog;
+      this.id = fields ? fields.id : Math.round(new Date().getTime() / 1000);
+      this.inLocalStorage = inLocalStorage ? true : false;
+      this.DB = inDB ? true : false;
+      
+    // methods
+      this.save = function (action) {
+      // Add me to the correct storage array for DB updating
+        if (!this.inDB) {
+          this.log.tempStorage[action].push({
+            'type': 'transcriptions',
+            'id': this.id,
+            'fields': {
+              'timecode': $('.timecode', this.jObj).attr('data-value'),
+              'note': $('.note', this.jObj).text(),
+              'created': this.id,
+              'modified': this.id,
+              'userId': 0
+            }
+          });
+        }
+        
+      // Add me to a general array of my type
+        this.log.transcriptions.push(this);
+        
+      // Ask the log to update localStorage
+        if (!this.inLocalStorage) this.log.updateLocalStorage(action);
+      }
+    
+    // Create the row in the log table in browser
+      // Loaded from the DB, exists in markup already
+      if (this.inDB) this.jObj = $('#trans'+id);
+      // Loaded from localStorage
+      else if (this.inLocalStorage) this.jObj = this.log.createRow('transcription', this.id, fields);
+      // Creating for the first time per user request
+      else this.jObj = this.log.createRow('transcription', this.id);
+      
+    // Save this transcription to the created array & transcription array
+      this.save('create');
+    }
+    
+    this.LogNote = function (parentLog, fields, inLocalStorage, inDB) {
+    // props
+      this.log = parentLog;
+      this.id = fields ? fields.id : Math.round(new Date().getTime() / 1000);
+      this.inLocalStorage = inLocalStorage ? true : false;
+      this.DB = inDB ? true : false;
+      
+    // methods
+      this.save = function (action) {
+      // Add me to the correct storage array for DB updating
+        if (!this.inDB) {
+          this.log.tempStorage[action].push({
+            'type': 'log_notes',
+            'id': this.id,
+            'fields': {
+              'timecode': $('.timecode', this.jObj).attr('data-value'),
+              'note': $('.note', this.jObj).text(),
+              'created': this.id,
+              'modified': this.id,
+              'userId': 0
+            }
+          });
+        }
+        
+      // Add me to a general array of my type
+        this.log.logs.push(this);
+        
+      // Ask the log to update localStorage
+        if (!this.inLocalStorage) this.log.updateLocalStorage(action);
+      }
+    
+    // Create the row in the log table in browser
+      // Loaded from the DB, exists in markup already
+      if (this.inDB) this.jObj = $('#log'+id);
+      // Loaded from localStorage
+      else if (this.inLocalStorage) this.jObj = this.log.createRow('log', this.id, fields);
+      // Creating for the first time per user request
+      else this.jObj = this.log.createRow('log', this.id);
+      
+    // Save this transcription to the created array & transcription array
+      this.save('create');
+    }
+    
+    this.Like = function () {
+      
+    }
+    
+    this.Comment = function () {
+      
+    }
+  
+  // Methods
+    // Create a row in the log table
     this.createRow = function (type, timestamp) {
       var note = $('<tr><td class="timecode"></td><td class="note" contenteditable="true"></td><td class="type"></td><td class="comments">0</td><td class="likes">0</td><td class="created"></td><td class="modified"></td><td><button>Like</button><button>Comment</button></td><td class="status">Local Only</td></tr>');
       
@@ -44,85 +140,9 @@ $(document).ready(function () {
       
       return $(note);
     }
-    
+    // Saves tempStorage (memory) into browser's persisent localStorage 
     this.updateLocalStorage = function (action) {
       localStorage[action] = JSON.stringify(this.tempStorage[action]);
-    }
-    
-    this.Transcription = function (parentLog) {
-    // props
-      this.log = parentLog;
-      this.id = Math.round(new Date().getTime() / 1000);
-      
-    // methods
-      this.save = function (action) {
-      // Add me to the correct storage array for DB updating
-        this.log.tempStorage[action].push({
-          'type': 'transcriptions',
-          'id': this.id,
-          'fields': {
-            'timecode': $('.timecode', this.jObj).attr('data-value'),
-            'note': $('.note', this.jObj).text(),
-            'created': this.id,
-            'modified': this.id,
-            'userId': 0
-          }
-        })
-        
-      // Add me to a general array of my type
-        this.log.transcriptions.push(this);
-        
-      // Ask the log to update localStorage
-        this.log.updateLocalStorage(action);
-      }
-    
-    // Create the row in the log table in browser
-      this.jObj = this.log.createRow('transcription', this.id);
-      
-    // Save this transcription to the created array & transcription array
-      this.save('create');
-    }
-    
-    this.LogNote = function (parentLog) {
-      // props
-      this.log = parentLog;
-      this.id = Math.round(new Date().getTime() / 1000);
-      
-    // methods
-      this.save = function (action) {
-      // Add me to the correct storage array for DB updating
-        this.log.tempStorage[action].push({
-          'type': 'log_notes',
-          'id': this.id,
-          'fields': {
-            'timecode': $('.timecode', this.jObj).attr('data-value'),
-            'note': $('.note', this.jObj).text(),
-            'created': this.id,
-            'modified': this.id,
-            'userId': 0
-          }
-        })
-        
-      // Add me to a general array of my type
-        this.log.logs.push(this);
-        
-      // Ask the log to update localStorage
-        this.log.updateLocalStorage(action);
-      }
-    
-    // Create the row in the log table in browser
-      this.jObj = this.log.createRow('log', this.id);
-      
-    // Save this transcription to the created array & transcription array
-      this.save('create');
-    }
-    
-    this.Like = function () {
-      
-    }
-    
-    this.Comment = function () {
-      
     }
     
   // Helper methods
@@ -152,43 +172,49 @@ $(document).ready(function () {
     }
   }
   
-  // player 
-  ff = function (time) {
-    if (!time) time = 5;
-    video.currentTime = video.currentTime + time;
-  }
-  
-  rr = function (time) {
-    if (!time) time = 5;
-    video.currentTime = video.currentTime - time;
-  }
-  
-  pp = function () {
-    if (video.playing) {
-      video.pause();
-      resetPlaybackRate();
+  Player = function () {
+  // Props
+    this.defaultPlaybackRate = 1.0;
+    
+  // Methods
+    this.ff = function (time) {
+      if (!time) time = 5;
+      video.currentTime = video.currentTime + time;
     }
-    else video.play();
+    
+    this.rr = function (time) {
+      if (!time) time = 5;
+      video.currentTime = video.currentTime - time;
+    }
+    
+    this.pp = function () {
+      if (video.playing) {
+        video.pause();
+        this.resetPlaybackRate();
+      }
+      else video.play();
+    }
+    
+    this.faster = function () {
+      this.setPlaybackRate(video.playbackRate + 0.1);
+    }
+    
+    this.slower = function () {
+      this.setPlaybackRate(video.playbackRate - 0.1);
+    }
+    
+    this.resetPlaybackRate = function () {
+      this.setPlaybackRate(this.defaultPlaybackRate);
+    }
+    
+    this.setPlaybackRate = function (val) {
+      val = parseInt(val * 10) / 10;
+      $('#playback_rate').html(val);
+      video.playbackRate = val;
+    }
   }
   
-  faster = function () {
-    setPlaybackRate(video.playbackRate + 0.1);
-  }
-  
-  slower = function () {
-    setPlaybackRate(video.playbackRate - 0.1);
-  }
-  
-  resetPlaybackRate = function () {
-    setPlaybackRate(defaultPlaybackRate);
-  }
-  
-  setPlaybackRate = function (val) {
-    val = parseInt(val * 10) / 10;
-    $('#playback_rate').html(val);
-    video.playbackRate = val;
-  }
-  
+// Functions
   bindKeys = function () {
     $(window).keydown(function (e) {
       if (keys.indexOf(e.which) != -1) {
@@ -205,24 +231,24 @@ $(document).ready(function () {
               //new comment();
               break;
             case 74: //j
-              slower();
+              player.slower();
               break;
             case 75: //k
-              pp();
+              player.pp();
               break;
             case 32: //space
-              pp();
+              player.pp();
               break;
             case 76: //l
-              faster();
+              player.faster();
               break;
             case 37: //<-
-              if (e.shiftKey) rr(30);
-              else rr();
+              if (e.shiftKey) player.rr(30);
+              else player.rr();
               break;
             case 39: //->
-              if (e.shiftKey) ff(30);
-              else ff();
+              if (e.shiftKey) player.ff(30);
+              else player.ff();
               break;
           }  
         }
@@ -234,7 +260,8 @@ $(document).ready(function () {
     $(window).off('keydown');
   }
   
-// Event listeners
+  
+// == Event listeners
   $(video).on('play', function () {
     video.playing = true;
   });
@@ -247,11 +274,13 @@ $(document).ready(function () {
     var val = parseFloat($(this).html());
     val = val > 0 && val < 8 ? val : 1.0;
     
-    defaultPlaybackRate = val;
-    setPlaybackRate(val);
+    player.defaultPlaybackRate = val;
+    player.setPlaybackRate(val);
   });
   
-// Do stuff
+// == Do stuff
   log = new Log();
+  player = new Player();
+  
   bindKeys();
 });
