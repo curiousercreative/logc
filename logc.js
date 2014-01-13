@@ -17,11 +17,10 @@ $(document).ready(function () {
     this.transcriptions = new Array(); // An array of all transcriptions indexed by created timestamp
     
     
-    Row = function (jObj) { // This will be for either a Log note or Transcription
+    this.Row = function () { // This will be for either a Log note or Transcription
       this.template = '<tr><td class="timecode"></td><td class="note" contenteditable="true"></td><td class="type"></td><td class="comments">0</td><td class="likes">0</td><td class="created"></td><td class="modified"></td><td><button>Like</button><button>Comment</button></td><td class="status">Local Only</td></tr>'
-      this.create = function () {
+      this.create = function (type) {
         var note = $(this.template);
-        var type = this.constructor == LogNote ? 'log' : 'transcription';
         var timestamp = Math.round(new Date().getTime() / 1000);
         
       // Add class to the row
@@ -48,23 +47,31 @@ $(document).ready(function () {
       }
     }
     
-    Transcription = function () {
-      Function.call('create');
+    this.Transcription = function () {
+      this.create('transcription');
     }
-    Transcription.prototype = new Row();
-    Transcription.constructor = Transcription;
-    
-    LogNote = function () {
-      Function.call('create');
+    this.Transcription.prototype = new this.Row();
+    this.Transcription.constructor = this.Transcription;
+    this.Transcription.parent = this.Row.prototype;
+    this.Transcription.create = function () {
+      this.parent.create.call(this);
     }
-    LogNote.prototype = new Row();
-    LogNote.constructor = LogNote;
     
-    Like = function () {
+    this.LogNote = function () {
+      this.create('log');
+    }
+    this.LogNote.prototype = new this.Row();
+    this.LogNote.constructor = this.LogNote;
+    this.LogNote.parent = this.Row.prototype;
+    this.LogNote.create = function () {
+      this.parent.create.call(this);
+    }
+    
+    this.Like = function () {
       
     }
     
-    Comment = function () {
+    this.Comment = function () {
       
     }
     
