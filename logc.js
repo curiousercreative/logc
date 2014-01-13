@@ -5,61 +5,100 @@ $(document).ready(function () {
   editingField = false;
   defaultPlaybackRate = 1.0;
   
-// functions
-  // log
-  formatTimecode = function (secs) {
-    time = '';
-  
-  // Hours
-    var hours = parseInt(secs/3600);
-    hours = hours > 9 ? hours : "0"+hours;
-    secs -= hours*360;
+// Classes
+  Log = function () {
+    this.localStorage = {
+      'creates' : new Array(),
+      'updates' : new Array(),
+      'deletes' : new Array()
+    }
     
-  // Minutes
-    var minutes = parseInt(secs/60);
-    minutes = minutes > 9 ? minutes : "0"+minutes;
-    secs -= minutes*60;
+    this.logs = new Array(); // An array of all Log notes indexed by created timestamp
+    this.transcriptions = new Array(); // An array of all transcriptions indexed by created timestamp
     
-  // Seconds
-    var seconds = parseInt(secs);
-    seconds = seconds > 9 ? seconds : "0"+seconds;
-    secs -= seconds;
     
-  // Frames
-    var frames = Math.round(24*secs);
-    frames = frames > 9 ? frames : "0"+frames;
+    Row = function (jObj) { // This will be for either a Log note or Transcription
+      this.template = '<tr><td class="timecode"></td><td class="note" contenteditable="true"></td><td class="type"></td><td class="comments">0</td><td class="likes">0</td><td class="created"></td><td class="modified"></td><td><button>Like</button><button>Comment</button></td><td class="status">Local Only</td></tr>'
+      this.create = function () {
+        var note = $(this.template);
+        var type = this.constructor == LogNote ? 'log' : 'transcription';
+        var timestamp = Math.round(new Date().getTime() / 1000);
+        
+      // Add class to the row
+        $(note).addClass(type).find('.type').html(type);
+        
+      // Add a timecode
+        $('.timecode', note).attr('data-value', video.currentTime).html(log.formatTimecode(video.currentTime));    
     
-    return hours+":"+minutes+":"+seconds+":"+frames;
+      // Add a timestamp
+        $('.created, .modified', note).html(timestamp);
+        
+      // Add to the log_table
+        $('#log_table tbody').prepend(note);
+        
+      // Add event listener
+        $('.note', note).on('focus', function () {
+          editingField = true;
+        }).on('blur', function () {
+          editingField = false;
+        });
+      
+      // Set focus to the note
+        $('.note', note).focus();
+      }
+    }
+    
+    Transcription = function () {
+      Function.call('create');
+    }
+    Transcription.prototype = new Row();
+    Transcription.constructor = Transcription;
+    
+    LogNote = function () {
+      Function.call('create');
+    }
+    LogNote.prototype = new Row();
+    LogNote.constructor = LogNote;
+    
+    Like = function () {
+      
+    }
+    
+    Comment = function () {
+      
+    }
+    
+  // Helper methods
+    this.formatTimecode = function (secs) {
+      time = '';
+    
+    // Hours
+      var hours = parseInt(secs/3600);
+      hours = hours > 9 ? hours : "0"+hours;
+      secs -= hours*360;
+      
+    // Minutes
+      var minutes = parseInt(secs/60);
+      minutes = minutes > 9 ? minutes : "0"+minutes;
+      secs -= minutes*60;
+      
+    // Seconds
+      var seconds = parseInt(secs);
+      seconds = seconds > 9 ? seconds : "0"+seconds;
+      secs -= seconds;
+      
+    // Frames
+      var frames = Math.round(24*secs);
+      frames = frames > 9 ? frames : "0"+frames;
+      
+      return hours+":"+minutes+":"+seconds+":"+frames;
+    }
   }
   
-  newNote = function (type) {
-    var note = $('<tr><td class="timecode"></td><td class="note" contenteditable="true"></td><td class="type"></td><td class="comments">0</td><td class="likes">0</td><td class="created"></td><td class="modified"></td><td><button>Like</button><button>Comment</button></td><td class="status">Local Only</td></tr>');
-    
-  // Add class to the row
-    $(note).addClass(type).find('.type').html(type);
-    
-  // Add a timecode
-    $('.timecode', note).attr('data-value', video.currentTime).html(formatTimecode(video.currentTime));    
-
-  // Add a timestamp
-    $('.time_added', note).html(Math.round(new Date().getTime() / 1000));
-    
-  // Add to the log_table
-    $('#log_table tbody').prepend(note);
-    
-  // Add event listener
-    $('.note', note).on('focus', function () {
-      editingField = true;
-    }).on('blur', function () {
-      editingField = false;
-    });
-  
-  // Set focus to the note
-    $('.note', note).focus();
-  }
-  
-  newComment = function () {
-  
+  updateLog = function (type, action, id) {
+    localStorage.updates = JSON.stringify(new Array(new Update()));
+    localStorage.creates = JSON.stringify(new Array(new Create()));
+    localStorage.deletes = JSON.stringify(new Array(new Delete()));
   }
   
   // player 
@@ -106,10 +145,10 @@ $(document).ready(function () {
           e.preventDefault();
           switch (e.which) {
             case 65: //a
-              newNote('log');
+              new log.LogNote();
               break;
             case 83: //s
-              newNote('transcription');
+              new log.Transcription();
               break;
             case 68: //d
               //new comment();
@@ -162,5 +201,6 @@ $(document).ready(function () {
   });
   
 // Do stuff
+  var log = new Log();
   bindKeys();
 });
