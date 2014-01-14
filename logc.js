@@ -3,6 +3,8 @@ $(document).ready(function () {
   video = $('video').get(0);
   keys = [65, 83, 68, 74, 75, 76, 32, 37, 39];
   editingField = false;
+  userId = 0;
+  videoId = 0;
   
 // Classes
   Log = function () {
@@ -12,7 +14,6 @@ $(document).ready(function () {
       'update' : new Array(),
       'delete' : new Array()
     }
-    
     this.logs = new Array(); // An array of all Log notes
     this.transcriptions = new Array(); // An array of all transcriptions
     this.likes = new Array(); // An array of all likes
@@ -25,45 +26,56 @@ $(document).ready(function () {
       this.log = parentLog;
       this.id = id ? id : this.log.getTimestamp();
       this.inLocalStorage = inLocalStorage ? true : false;
-      this.DB = inDB ? true : false;
-      
-    // storage methods
-      // autosave to tempStorage and localStorage
-      this.autosave = function (action, fields) {
-      // Add to temp storage
-        if (action == 'remove') {
-        // Add to temp storage
-          this.log.tempStorage[action].push({
-            'type': this.type,
-            'id': this.id
-          });
-        }
-        else {
-        // Add me to the correct storage array for DB updating
-          if (!this.inDB) {
-            if (!fields) {
-              var fields = {
-                'timecode': $('.timecode', this.jObj).attr('data-value'),
-                'note': $('.note', this.jObj).text(),
-                'created': $('.created', this.jObj).text(),
-                'modified': $('.modified', this.jObj).text(),
-                'userId': 0
-              }
-            }
-            this.log.tempStorage[action].push({
-              'type': this.type,
-              'id': this.id,
-              'fields': fields
-            });
+      this.inDB = inDB ? true : false;
+    
+    // methods
+      // prepares an object for storing locally and saving to DB
+      this.prepFields = function () {
+        return {
+            'timecode': $('.timecode', this.jObj).attr('data-value'),
+            'note': $('.note', this.jObj).text(),
+            'created': $('.created', this.jObj).text(),
+            'modified': $('.modified', this.jObj).text()
           }
         }
-      
-      // Ask the log to update localStorage
-        if (!this.inLocalStorage) {
-          this.log.updateLocalStorage(action);
-          this.inLocalStorage = true;
-        }
       }
+     
+      // Creates a row in the browser log table
+      this.createTableRow = function (fields) {
+      // If this is a first time create, not loaded from storage
+        if (!fields) {
+          var fields = {
+            timecode: video.currentTime,
+            created: this.id,
+            modified: this.id
+          }
+        }
+        
+        var row = $('<tr><td class="timecode"></td><td class="note" contenteditable="true"></td><td class="type"></td><td class="comments">0</td><td class="likes">0</td><td class="created"></td><td class="modified"></td><td><button>Like</button><button>Comment</button></td><td class="status">Local Only</td></tr>');
+        
+      // Add class && id to the row
+        $(row).attr('id', this.type+this.id).addClass(this.type).find('.type').html(this.type);
+        
+      // Add a timecode
+        $('.timecode', row).attr('data-value', fields.timecode).html(this.log.formatTimecode(fields.timecode));    
+    
+      // Add timestamps
+        $('.created', row).html(fields.created);      
+        $('.modified', row).html(fields.modified);
+        
+      // Add to the log_table
+        $('#log_table tbody').prepend(row);
+        
+      // Add event listener
+        this.addFocusBlurListener($('.note', row));
+      
+      // Set focus to the note
+        if (fields.note) $('.note', row).text(fields.note);
+        else $('.note', row).focus();
+        
+        return $(row);
+      }
+      
       // Update a row from localStorage data
       this.updateFromLocalStorage = function (fields) {
       // Update browser
@@ -95,19 +107,53 @@ $(document).ready(function () {
           }
         }
       }
-    // Create the row in the log table in browser
+      
+    // Listeners
+      this.addFocusBlurListener = function (jObj) {
+        jObj.on('focus', function () {
+          editingField = true;
+          $(this).data('old_value', $(this).text());
+        }).on('blur', function () {
+          editingField = false;
+        // Check to see if the value changed
+          if ($(this).data('old_value') !== $(this).text()) {
+            var type = $(this).parents('tr').find('.type').html();
+            var id = $(this).parents('tr').attr('id').replace(type, '');
+            
+            log.getObjById(type, id).onUpdate({'note': $(this).text()});
+          }
+        });
+      }
+      
+      this.onUpdate = function (fields) {
+        fields.modified = log.getTimestamp();
+        
+      // Update the stored values
+        this.inDB = false;
+        this.inLocalStorage = false;
+            
+      // autosave the update
+        this.log.autosave('update', log.prepLogObj(this.type, this.id, fields), this.inLocalStorage);
+        
+      // Update the table modified
+        $(this).parents('tr').find('.modified').text(modified);
+      }
+      
+  // == Contructor do
       // Loaded from the DB, exists in markup already
       if (this.inDB) this.jObj = $('#'+this.type + this.id);
       // Loaded from localStorage
-      else if (this.inLocalStorage) this.jObj = this.log.createRow(this.type, this.id, fields);
+      else if (this.inLocalStorage) this.jObj = this.createTableRow(fields);
       // Creating for the first time per user request
-      else this.jObj = this.log.createRow(this.type, this.id);
+      else this.jObj = this.createTableRow();
       
     // Save to our array of all of this type
       this.log[this.type+"s"].push(this);
       
     // Save to array for updating DB
-      if (!this.inDB) this.autosave('create');
+      if (!this.inDB) {
+        this.log.autosave('create', this.log.prepLogObj(this.type, this.id, this.prepFields()), this.inLocalStorage);
+      }
     }
     
     this.Like = function () {
@@ -116,70 +162,7 @@ $(document).ready(function () {
     
     this.Comment = function () {
       
-    }
-  
-  // == Browser Methods
-    // Create a row in the log table
-    this.createRow = function (type, id, fields) {
-    // If this is a first time create, not loaded from storage
-      if (!fields) {
-        var fields = {
-          timecode: video.currentTime,
-          created: id,
-          modified: id
-        }
-      }
-      
-      var row = $('<tr><td class="timecode"></td><td class="note" contenteditable="true"></td><td class="type"></td><td class="comments">0</td><td class="likes">0</td><td class="created"></td><td class="modified"></td><td><button>Like</button><button>Comment</button></td><td class="status">Local Only</td></tr>');
-      
-    // Add class && id to the row
-      $(row).attr('id', type+id).addClass(type).find('.type').html(type);
-      
-    // Add a timecode
-      $('.timecode', row).attr('data-value', fields.timecode).html(log.formatTimecode(fields.timecode));    
-  
-    // Add timestamps
-      $('.created', row).html(fields.created);      
-      $('.modified', row).html(fields.modified);
-      
-    // Add to the log_table
-      $('#log_table tbody').prepend(row);
-      
-    // Add event listener
-      $('.note', row).on('focus', function () {
-        editingField = true;
-        $(this).data('old_value', $(this).text());
-      }).on('blur', function () {
-        editingField = false;
-        if ($(this).data('old_value') !== $(this).text()) {
-          var type = $(this).parents('tr').find('.type').html();
-          var id = $(this).parents('tr').attr('id').replace(type, '');
-          var note = $(this).text();
-          var modified = log.getTimestamp();
-          
-        // Update the stored values
-          for (var x in log[type+"s"]) {
-            if (log[type+"s"][x].id == id) {
-            // remove the storage flags on this log object
-              log[type+"s"][x].inDB = false;
-              log[type+"s"][x].inLocalStorage = false;
-              
-            // autosave the update
-              log[type+"s"][x].autosave('update', {'note':note, 'modified': modified});
-            }
-          }
-          
-        // Update the table modified
-          $(this).parents('tr').find('.modified').text(modified);
-        }
-      });
-    
-    // Set focus to the note
-      if (fields.note) $('.note', row).text(fields.note);
-      else $('.note', row).focus();
-      
-      return $(row);
-    }
+    }    
     
   // == Storage methods
     // Saves tempStorage (memory) into browser's persisent localStorage 
@@ -287,6 +270,26 @@ $(document).ready(function () {
         }
       }
     }
+    // autosave to tempStorage and localStorage
+    this.autosave = function (action, logObj, inLocalStorage) {
+    // Add to temp storage
+      if (action == 'remove') {
+      // Add to temp storage
+        this.log.tempStorage[action].push({
+          'type': this.type,
+          'id': this.id
+        });
+      }
+      else {
+      // Add me to the correct storage array for DB updating
+        if (!this.inDB) {
+          this.tempStorage[action].push(logObj);
+        }
+      }
+    
+    // Update localStorage
+      if (!inLocalStorage) this.updateLocalStorage(action);
+    }
     // Saves localStorage to server DB
     this.save = function () {
       $.ajax({
@@ -296,6 +299,18 @@ $(document).ready(function () {
           console.log(response);
         }
       })
+    }
+    // prepares an object for storing locally and saving to DB
+    this.prepLogObj = function (type, id, fields) {
+      var logObj = {
+        'type': type,
+        'id': id,
+        'userId': userId,
+        'videoId': videoId
+      }
+      if (fields) logObj.fields = fields;
+      
+      return logObj;
     }
     
   // Helper methods
@@ -325,6 +340,13 @@ $(document).ready(function () {
     }
     this.getTimestamp = function () {
       return Math.round(new Date().getTime() / 1000); 
+    }
+    this.getObjById = function (type, id) {
+      for (var x in this[type+'s']) {
+        if (this[type+'s'][x].id == id) return this[type+'s'][x];
+      }
+      
+      return false;
     }
   }
   
