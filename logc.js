@@ -32,11 +32,10 @@ $(document).ready(function () {
       // prepares an object for storing locally and saving to DB
       this.prepFields = function () {
         return {
-            'timecode': $('.timecode', this.jObj).attr('data-value'),
-            'note': $('.note', this.jObj).text(),
-            'created': $('.created', this.jObj).text(),
-            'modified': $('.modified', this.jObj).text()
-          }
+          'timecode': $('.timecode', this.jObj).attr('data-value'),
+          'note': $('.note', this.jObj).text(),
+          'created': $('.created', this.jObj).text(),
+          'modified': $('.modified', this.jObj).text()
         }
       }
      
@@ -136,7 +135,7 @@ $(document).ready(function () {
         this.log.autosave('update', log.prepLogObj(this.type, this.id, fields), this.inLocalStorage);
         
       // Update the table modified
-        $(this).parents('tr').find('.modified').text(modified);
+        $(this).parents('tr').find('.modified').text(fields.modified);
       }
       
   // == Contructor do
