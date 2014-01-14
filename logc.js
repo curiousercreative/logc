@@ -16,8 +16,6 @@ $(document).ready(function () {
     }
     this.logs = new Array(); // An array of all Log notes
     this.transcriptions = new Array(); // An array of all transcriptions
-    this.likes = new Array(); // An array of all likes
-    this.comments = new Array(); // An array of all transcriptions
     
   // Classes
     this.Row = function (type, parentLog, id, fields, inLocalStorage, inDB) {
@@ -27,6 +25,42 @@ $(document).ready(function () {
       this.id = id ? id : this.log.getTimestamp();
       this.inLocalStorage = inLocalStorage ? true : false;
       this.inDB = inDB ? true : false;
+      this.likes = new Array(); // An array of all likes
+      this.comments = new Array(); // An array of all comments
+    
+    // Classes
+      this.Like = function (parentRow, inLocalStorage, inDB) {
+      // Props
+        this.id = log.getTimestamp();
+        this.parentRow = parentRow;
+        this.inLocalStorage = inLocalStorage ? true : false;
+        this.inDB = inDB ? true : false;
+      
+      // Methods
+        this.prepFields = function () {
+          return {
+            'rowType': this.parentRow.type,
+            'rowId': this.parentRow.id
+          }
+        }
+        
+      // Constructor do
+        //Increment the like count
+        $('.likes', this.parentRow).text(parseInt($('.likes', this.parentRow).text()) + 1);
+        
+        // Save to our array of all of this type
+        this.parentRow.likes.push(this);
+        
+      // Save to array for updating DB
+        if (!this.inDB) {
+          this.log.autosave('create', this.log.prepLogObj('like', this.id, this.prepFields()), this.inLocalStorage);
+        }
+      }
+      
+      this.Comment = function () {
+        
+      }    
+    
     
     // methods
       // prepares an object for storing locally and saving to DB
@@ -50,7 +84,7 @@ $(document).ready(function () {
           }
         }
         
-        var row = $('<tr><td class="timecode"></td><td class="note" contenteditable="true"></td><td class="type"></td><td class="comments">0</td><td class="likes">0</td><td class="created"></td><td class="modified"></td><td><button>Like</button><button>Comment</button></td><td class="status">Local Only</td></tr>');
+        var row = $('<tr><td class="timecode"></td><td class="note" contenteditable="true"></td><td class="type"></td><td class="comments">0</td><td class="likes">0</td><td class="created"></td><td class="modified"></td><td><button class="like">Like</button><button class="comment">Comment</button></td><td class="status">Local Only</td></tr>');
         
       // Add class && id to the row
         $(row).attr('id', this.type+this.id).addClass(this.type).find('.type').html(this.type);
@@ -65,9 +99,15 @@ $(document).ready(function () {
       // Add to the log_table
         $('#log_table tbody').prepend(row);
         
-      // Add event listener
+      // Add focus & blur listener for the note
         this.addFocusBlurListener($('.note', row));
+        
+      // Add click and hover listener for like button
+        this.addLikeListeners($(row));
       
+      // Add click and hover listener for comment button
+        this.addCommentListeners($(row));
+        
       // Set focus to the note
         if (fields.note) $('.note', row).text(fields.note);
         else $('.note', row).focus();
@@ -116,12 +156,32 @@ $(document).ready(function () {
           editingField = false;
         // Check to see if the value changed
           if ($(this).data('old_value') !== $(this).text()) {
-            var type = $(this).parents('tr').find('.type').html();
-            var id = $(this).parents('tr').attr('id').replace(type, '');
-            
-            log.getObjById(type, id).onUpdate({'note': $(this).text()});
+            log.getObjById($(this).parents('tr').attr('id')).onUpdate({'note': $(this).text()});
           }
         });
+      }
+      
+      this.addLikeListeners = function (jObj) {
+      // Click
+        $('button.like', jObj).on('click', function (e) {
+        // what's my parent's obj?
+          var parentRow = log.getObjById($(this).parents('tr').attr('id'));
+        
+        // Create new Like
+          new parentRow.Like(parentRow);
+        });
+        
+        $('button.like', jObj).hover(function () {
+          if ($(this).hasClass('liked')) {
+            $(this).text('Unlike');
+          }
+        }, function () {
+          
+        });
+      }
+      
+      this.addCommentListeners = function (jObj) {
+        
       }
       
       this.onUpdate = function (fields) {
@@ -154,14 +214,6 @@ $(document).ready(function () {
         this.log.autosave('create', this.log.prepLogObj(this.type, this.id, this.prepFields()), this.inLocalStorage);
       }
     }
-    
-    this.Like = function () {
-      
-    }
-    
-    this.Comment = function () {
-      
-    }    
     
   // == Storage methods
     // Saves tempStorage (memory) into browser's persisent localStorage 
@@ -311,7 +363,7 @@ $(document).ready(function () {
       
       return logObj;
     }
-    
+  
   // Helper methods
     this.formatTimecode = function (secs) {
       time = '';
@@ -340,9 +392,25 @@ $(document).ready(function () {
     this.getTimestamp = function () {
       return Math.round(new Date().getTime() / 1000); 
     }
-    this.getObjById = function (type, id) {
-      for (var x in this[type+'s']) {
-        if (this[type+'s'][x].id == id) return this[type+'s'][x];
+    this.getObjById = function (rowId) {
+    // The rowId is a string as expected
+      if (typeof(rowId) == 'string') {
+        var id = rowId.replace(/[^\d]+/g, '');
+        var type = rowId.replace(/\d+/g, '');
+        
+        for (var x in this[type+'s']) {
+          if (this[type+'s'][x].id == id) return this[type+'s'][x];
+        }
+      }
+    // It's just the id, not good, but whatevs
+      else if (typeof(rowId) == 'number') {
+        var types = ['logs', 'transcriptions', 'likes', 'comments'];
+        
+        for (var x in types) {
+          for (var y in this[types[x]]) {
+            if (this[type[x]][y].id == rowId) return this[type[x]][y];
+          }
+        }
       }
       
       return false;
