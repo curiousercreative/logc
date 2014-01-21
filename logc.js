@@ -27,9 +27,9 @@ $(document).ready(function () {
       this.comments = new Array(); // An array of all comments
     
     // Classes
-      this.Like = function (parentRow, inLocalStorage, inDB) {
+      this.Like = function (parentRow, id, inLocalStorage, inDB) {
       // Props
-        this.id = log.getTimestamp();
+        this.id = id ? id : log.getTimestamp();
         this.parentRow = parentRow;
         this.inLocalStorage = inLocalStorage ? true : false;
         this.inDB = inDB ? true : false;
@@ -47,7 +47,7 @@ $(document).ready(function () {
             log.saveLocal('remove', this);
           }
           else if (this.inLocalStorage) {
-            log.removeFromLocalStorage(this.id, create);
+            log.removeFromLocalStorage(this.id, new Array('create'));
           }
         
         // Update like count
@@ -70,6 +70,7 @@ $(document).ready(function () {
       // Save to array for updating DB
         if (!this.inDB) {
           log.saveLocal('create', log.prepLogObj('like', this.id, this.prepFields()), this.inLocalStorage);
+          this.inLocalStorage = true;
         }
       }
       
@@ -288,10 +289,14 @@ $(document).ready(function () {
             case 'like':
             // Find row parent
               var parentRow = log.getRowById(creates[x].fields.rowId, creates[x].fields.rowType);
-              new parentRow.Like(parentRow, creates[x].id, creates[x].fields, true);
+              
+              parentRow.like = new parentRow.Like(parentRow, creates[x].id, true);
               break;
             case 'comment':
-              new this.Comment(this, creates[x].id, creates[x].fields, true);
+            // Find row parent first
+              var parentRow = log.getRowById(creates[x].fields.rowId, creates[x].fields.rowType);
+              
+              parentRow.comments.push(new parentRow.Comment(parentRow, creates[x].id, true));
               break;
           }
         }
@@ -443,45 +448,36 @@ $(document).ready(function () {
       return Math.round(new Date().getTime() / 1000); 
     }
     this.getRowById = function (rowId, rowType) {
-    // The rowId is a string as expected
-      if (typeof(rowId) == 'string') {
-        if (rowType) {
-          var id = rowId;
-          var type = rowType;
-        }
-        else {
-          var id = rowId.replace(/[^\d]+/g, '');
-          var type = rowId.replace(/\d+/g, '');  
-        }
-        
-        for (var x in this[type+'s']) {
-          if (this[type+'s'][x].id == id) return this[type+'s'][x];
-        }
+    // If we have both id and type
+      if (rowType) {
+        var id = rowId;
+        var type = rowType;
       }
-    // It's just the id, not good, but whatevs
-      else if (typeof(rowId) == 'number') {
-        var types = ['logs', 'transcriptions'];
-        
-        for (var x in types) {
-          for (var y in this[types[x]]) {
-            if (this[type[x]][y].id == rowId) return this[type[x]][y];
-          }
-        }
+    // No type passed, the type and id are a string together
+      else if (typeof(rowId) == 'string') {
+        var id = rowId.replace(/[^\d]+/g, '');
+        var type = rowId.replace(/\d+/g, '');  
       }
-      
+      else return false;
+        
+    // Look for it
+      for (var x in this[type+'s']) {
+        if (this[type+'s'][x].id == id) return this[type+'s'][x];
+      }
+  
       return false;
     }
     this.removeFromLocalStorage = function(id, actions) {
       if (typeof(actions) == 'string') actions = new Array(actions);
-      
-      for (x in actions) {
-        for (y in this.tempStorage[x]) {
-          if (this.tempStorage[x][y].id == id) {
+      console.log(id);
+      for (var x in actions) {
+        for (var y in this.tempStorage[actions[x]]) {
+          if (this.tempStorage[actions[x]][y].id == id) {
           // Remove from the tempStorage
-            this.tempStorage[x].splice(y, 1);
+            this.tempStorage[actions[x]].splice(y, 1);
             
           // Update the localStorage
-            this.updateLocalStorage(x);
+            this.updateLocalStorage(actions[x]);
             
             return true;
           }
