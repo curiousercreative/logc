@@ -18,14 +18,12 @@ $(document).ready(function () {
     this.transcriptions = new Array(); // An array of all transcriptions
     
   // Classes
-    this.Row = function (type, parentLog, id, fields, inLocalStorage, inDB) {
+    this.Row = function (type, id, fields, inLocalStorage, inDB) {
     // props
       this.type = type;
-      this.log = parentLog;
-      this.id = id ? id : this.log.getTimestamp();
+      this.id = id ? id : log.getTimestamp();
       this.inLocalStorage = inLocalStorage ? true : false;
       this.inDB = inDB ? true : false;
-      this.likes = new Array(); // An array of all likes
       this.comments = new Array(); // An array of all comments
     
     // Classes
@@ -43,17 +41,35 @@ $(document).ready(function () {
             'rowId': this.parentRow.id
           }
         }
+        this.destroy = function () {
+        // Do I need to be removed from the DB?
+          if (this.inDB) {
+            log.saveLocal('remove', this);
+          }
+          else if (this.inLocalStorage) {
+            log.removeFromLocalStorage(this.id, create);
+          }
         
-      // Constructor do
-        //Increment the like count
-        $('.likes', this.parentRow).text(parseInt($('.likes', this.parentRow).text()) + 1);
+        // Update like count
+          $('.likes', this.parentRow.jObj).html(parseInt($('.likes', this.parentRow.jObj).text()) - 1);
+          
+        // Update button text
+          $('button.like', this.parentRow.jObj).removeClass('liked').text('Like');
         
-        // Save to our array of all of this type
-        this.parentRow.likes.push(this);
+        // delete yourself
+          delete this.parentRow.like;
+        }
+      
+    //== Constructor do
+        // Update like count
+          $('.likes', this.parentRow.jObj).html(parseInt($('.likes', this.parentRow.jObj).text()) + 1);
+          
+        // Update button text
+          $('button.like', this.parentRow.jObj).addClass('liked').text('Unlike');
         
       // Save to array for updating DB
         if (!this.inDB) {
-          this.log.autosave('create', this.log.prepLogObj('like', this.id, this.prepFields()), this.inLocalStorage);
+          log.saveLocal('create', log.prepLogObj('like', this.id, this.prepFields()), this.inLocalStorage);
         }
       }
       
@@ -90,7 +106,7 @@ $(document).ready(function () {
         $(row).attr('id', this.type+this.id).addClass(this.type).find('.type').html(this.type);
         
       // Add a timecode
-        $('.timecode', row).attr('data-value', fields.timecode).html(this.log.formatTimecode(fields.timecode));    
+        $('.timecode', row).attr('data-value', fields.timecode).html(log.formatTimecode(fields.timecode));    
     
       // Add timestamps
         $('.created', row).html(fields.created);      
@@ -123,26 +139,26 @@ $(document).ready(function () {
         }
         
       // Update storages
-        for (var x in this.log.tempStorage.create) {
+        for (var x in log.tempStorage.create) {
         // Check to see if it's waiting to be created in the DB and add the updates to it
-          if (this.log.tempStorage.create[x].id == this.id) {
+          if (log.tempStorage.create[x].id == this.id) {
           // Overwrite with update fields
             for (var y in fields) {
-              this.log.tempStorage.create[x].fields[y] = fields[y];
+              log.tempStorage.create[x].fields[y] = fields[y];
             }
           
           // Save the temp updates to localStorage
-            this.log.updateLocalStorage('create');
+            log.updateLocalStorage('create');
             
           // Remove this item from the updates array
             for (var z in this.log.tempStorage.update) {
-              if (this.log.tempStorage.update[z].id == this.id) {
-                this.log.tempStorage.update.splice(z, 1);
+              if (log.tempStorage.update[z].id == this.id) {
+                log.tempStorage.update.splice(z, 1);
               }
             }
           
           // Save the temp updates to localStorage
-            this.log.updateLocalStorage('update');
+            log.updateLocalStorage('update');
           }
         }
       }
@@ -156,7 +172,7 @@ $(document).ready(function () {
           editingField = false;
         // Check to see if the value changed
           if ($(this).data('old_value') !== $(this).text()) {
-            log.getObjById($(this).parents('tr').attr('id')).onUpdate({'note': $(this).text()});
+            log.getRowById($(this).parents('tr').attr('id')).onUpdate({'note': $(this).text()});
           }
         });
       }
@@ -165,10 +181,17 @@ $(document).ready(function () {
       // Click
         $('button.like', jObj).on('click', function (e) {
         // what's my parent's obj?
-          var parentRow = log.getObjById($(this).parents('tr').attr('id'));
-        
-        // Create new Like
-          new parentRow.Like(parentRow);
+          var parentRow = log.getRowById($(this).parents('tr').attr('id'));
+          
+        // Has this user already liked this row?
+          if (!parentRow.like) {
+          // Hasn't liked it, create a new like
+            parentRow.like = new parentRow.Like(parentRow);
+          }
+          else {
+          // they already liked it and now we're unliking it
+            parentRow.like.destroy();
+          }
         });
         
         $('button.like', jObj).hover(function () {
@@ -176,7 +199,9 @@ $(document).ready(function () {
             $(this).text('Unlike');
           }
         }, function () {
-          
+          if ($(this).hasClass('liked')) {
+            $(this).text('Liked');
+          }
         });
       }
       
@@ -191,13 +216,36 @@ $(document).ready(function () {
         this.inDB = false;
         this.inLocalStorage = false;
             
-      // autosave the update
-        this.log.autosave('update', log.prepLogObj(this.type, this.id, fields), this.inLocalStorage);
+      // saveLocal the update
+        log.saveLocal('update', log.prepLogObj(this.type, this.id, fields), this.inLocalStorage);
         
       // Update the table modified
         $(this).parents('tr').find('.modified').text(fields.modified);
       }
-      
+     
+    // Helper methods
+      this.getObjById = function (objId) {
+      // The rowId is a string as expected
+        if (typeof(objId) == 'string') {
+          var id = objId.replace(/[^\d]+/g, '');
+          var type = objId.replace(/\d+/g, '');
+          
+          for (var x in this[type+'s']) {
+            if (this[type+'s'][x].id == id) return this[type+'s'][x];
+          }
+        }
+      // It's just the id, not good, but whatevs
+        else if (typeof(objId) == 'number') {
+          var types = ['likes', 'comments'];
+          
+          for (var x in types) {
+            for (var y in this[types[x]]) {
+              if (this[type[x]][y].id == objId) return this[type[x]][y];
+            }
+          }
+        }
+      }
+  
   // == Contructor do
       // Loaded from the DB, exists in markup already
       if (this.inDB) this.jObj = $('#'+this.type + this.id);
@@ -207,11 +255,11 @@ $(document).ready(function () {
       else this.jObj = this.createTableRow();
       
     // Save to our array of all of this type
-      this.log[this.type+"s"].push(this);
+      log[this.type+"s"].push(this);
       
     // Save to array for updating DB
       if (!this.inDB) {
-        this.log.autosave('create', this.log.prepLogObj(this.type, this.id, this.prepFields()), this.inLocalStorage);
+        log.saveLocal('create', log.prepLogObj(this.type, this.id, this.prepFields()), this.inLocalStorage);
       }
     }
     
@@ -232,13 +280,15 @@ $(document).ready(function () {
         for (var x in creates) {
           switch(creates[x].type) {
             case 'log':
-              new this.Row('log', this, creates[x].id, creates[x].fields, true);
+              new this.Row('log', creates[x].id, creates[x].fields, true);
               break;
             case 'transcription':
-              new this.Row('transcription', this, creates[x].id, creates[x].fields, true);
+              new this.Row('transcription', creates[x].id, creates[x].fields, true);
               break;
             case 'like':
-              new this.Like(this, creates[x].id, creates[x].fields, true);
+            // Find row parent
+              var parentRow = log.getRowById(creates[x].fields.rowId, creates[x].fields.rowType);
+              new parentRow.Like(parentRow, creates[x].id, creates[x].fields, true);
               break;
             case 'comment':
               new this.Comment(this, creates[x].id, creates[x].fields, true);
@@ -321,14 +371,14 @@ $(document).ready(function () {
         }
       }
     }
-    // autosave to tempStorage and localStorage
-    this.autosave = function (action, logObj, inLocalStorage) {
+    // saveLocal to tempStorage and localStorage
+    this.saveLocal = function (action, logObj, inLocalStorage) {
     // Add to temp storage
       if (action == 'remove') {
       // Add to temp storage
-        this.log.tempStorage[action].push({
-          'type': this.type,
-          'id': this.id
+        log.tempStorage[action].push({
+          'type': logObj.type,
+          'id': logObj.id
         });
       }
       else {
@@ -342,7 +392,7 @@ $(document).ready(function () {
       if (!inLocalStorage) this.updateLocalStorage(action);
     }
     // Saves localStorage to server DB
-    this.save = function () {
+    this.saveDB = function () {
       $.ajax({
         url: 'update.php',
         data: this.tempStorage,
@@ -392,11 +442,17 @@ $(document).ready(function () {
     this.getTimestamp = function () {
       return Math.round(new Date().getTime() / 1000); 
     }
-    this.getObjById = function (rowId) {
+    this.getRowById = function (rowId, rowType) {
     // The rowId is a string as expected
       if (typeof(rowId) == 'string') {
-        var id = rowId.replace(/[^\d]+/g, '');
-        var type = rowId.replace(/\d+/g, '');
+        if (rowType) {
+          var id = rowId;
+          var type = rowType;
+        }
+        else {
+          var id = rowId.replace(/[^\d]+/g, '');
+          var type = rowId.replace(/\d+/g, '');  
+        }
         
         for (var x in this[type+'s']) {
           if (this[type+'s'][x].id == id) return this[type+'s'][x];
@@ -404,11 +460,30 @@ $(document).ready(function () {
       }
     // It's just the id, not good, but whatevs
       else if (typeof(rowId) == 'number') {
-        var types = ['logs', 'transcriptions', 'likes', 'comments'];
+        var types = ['logs', 'transcriptions'];
         
         for (var x in types) {
           for (var y in this[types[x]]) {
             if (this[type[x]][y].id == rowId) return this[type[x]][y];
+          }
+        }
+      }
+      
+      return false;
+    }
+    this.removeFromLocalStorage = function(id, actions) {
+      if (typeof(actions) == 'string') actions = new Array(actions);
+      
+      for (x in actions) {
+        for (y in this.tempStorage[x]) {
+          if (this.tempStorage[x][y].id == id) {
+          // Remove from the tempStorage
+            this.tempStorage[x].splice(y, 1);
+            
+          // Update the localStorage
+            this.updateLocalStorage(x);
+            
+            return true;
           }
         }
       }
@@ -467,10 +542,10 @@ $(document).ready(function () {
           e.preventDefault();
           switch (e.which) {
             case 65: //a
-              new log.Row('log', log);
+              new log.Row('log');
               break;
             case 83: //s
-              new log.Row('transcription', log);
+              new log.Row('transcription');
               break;
             case 68: //d
               //new comment();
