@@ -227,6 +227,43 @@ p:last-child {
 	text-align: left;
 }
 
-#log_table .note {
+#log_table table {
 	width: 100%;
+	font-size: 0.875em;
+}
+
+#log_table .note {
+	width: 60%;
+}
+
+#log_table .timecode {
+	width: 5%;
+}
+
+#log_table .type {
+	width: 3%;
+}
+
+#log_table .comments {
+	width: 5%;
+}
+
+#log_table .likes {
+	width: 3%;
+}
+
+#log_table .created {
+	width: 6%;
+}
+
+#log_table .modified {
+	width: 6%;
+}
+
+#log_table .actions {
+	width: 5%;
+}
+
+#log_table .status {
+	width: 4%;
 }
