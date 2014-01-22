@@ -74,8 +74,63 @@ $(document).ready(function () {
         }
       }
       
-      this.Comment = function () {
+      this.Comment = function (parentRow, id, inLocalStorage, inDB) {
+      // Props
+        this.id = id ? id : log.getTimestamp();
+        this.parentRow = parentRow;
+        this.inLocalStorage = inLocalStorage ? true : false;
+        this.inDB = inDB ? true : false;
+        this.jObj = $('#comment'+id, parentRow.jObj);
+      
+      // Methods
+        this.prepFields = function () {
+          return {
+            'rowType': this.parentRow.type,
+            'rowId': this.parentRow.id,
+            'note': this.jObj.text()
+          }
+        }
+        this.destroy = function () {
+        // Do I need to be removed from the DB?
+          if (this.inDB) {
+            log.saveLocal('remove', this);
+          }
+          else if (this.inLocalStorage) {
+            log.removeFromLocalStorage(this.id, new Array('create'));
+          }
+          else log.removeFromLocalStorage(this.id, new Array('update'));
         
+        // Update like count
+          $('.comments', this.parentRow.jObj).html(parseInt($('.comments', this.parentRow.jObj).text()) - 1);
+        
+        // delete yourself
+          for (var x in this.parentRow.comments) {
+            if (this.parentRow.comments[x] == this) delete this.parentRow.comments[x];
+          }
+          delete this;
+        }
+      
+    //== Constructor do        
+      // Update like count
+          $('.comments', this.parentRow.jObj).html(parseInt($('.comments', this.parentRow.jObj).text()) + 1);
+      
+      // Save to array for updating DB
+        if (!this.inDB) {
+          log.saveLocal('create', log.prepLogObj('comment', this.id, this.prepFields()), this.inLocalStorage);
+          this.inLocalStorage = true;
+        }
+        
+      // Listen for blurs
+        this.jObj.on('blur', function () {
+        // Check to see if anything was changed
+          if (this.jObj.data('content') !== this.jObj.text()) {
+          // Update the data attribute
+            this.jObj.data('content', this.jObj.text());
+            
+          // Update the local storage
+            
+          }
+        });
       }    
     
     
@@ -101,7 +156,7 @@ $(document).ready(function () {
           }
         }
         
-        var row = $('<tr><td class="timecode"></td><td class="note" contenteditable="true"></td><td class="type"></td><td class="comments">0</td><td class="likes">0</td><td class="created"></td><td class="modified"></td><td><button class="like">Like</button><button class="comment">Comment</button></td><td class="status">Local Only</td></tr>');
+        var row = $('<tr><td colspan="9"><table><tbody><tr><td class="timecode"></td><td class="note" contenteditable="true"></td><td class="type"></td><td class="comments">0</td><td class="likes">0</td><td class="created"></td><td class="modified"></td><td><button class="like">Like</button><button class="comment">Comment</button></td><td class="status">Local Only</td></tr></tbody></table></td></tr>');
         
       // Add class && id to the row
         $(row).attr('id', this.type+this.id).addClass(this.type).find('.type').html(this.type);
@@ -225,26 +280,19 @@ $(document).ready(function () {
       }
      
     // Helper methods
-      this.getObjById = function (objId) {
-      // The rowId is a string as expected
-        if (typeof(objId) == 'string') {
-          var id = objId.replace(/[^\d]+/g, '');
-          var type = objId.replace(/\d+/g, '');
-          
-          for (var x in this[type+'s']) {
-            if (this[type+'s'][x].id == id) return this[type+'s'][x];
-          }
+      this.getCommentById = function (cId) {
+        var type = 'comment';
+        
+      // The commentId came with the type prepended to it
+        if (typeof(cId) == 'string') {
+          var id = cId.replace(/[^\d]+/g, '');
         }
-      // It's just the id, not good, but whatevs
-        else if (typeof(objId) == 'number') {
-          var types = ['likes', 'comments'];
-          
-          for (var x in types) {
-            for (var y in this[types[x]]) {
-              if (this[type[x]][y].id == objId) return this[type[x]][y];
-            }
-          }
+        
+        for (var x in this[type+'s']) {
+          if (this[type+'s'][x].id == id) return this[type+'s'][x];
         }
+        
+        return false;
       }
   
   // == Contructor do
