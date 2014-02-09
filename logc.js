@@ -156,7 +156,7 @@ $(document).ready(function () {
           }
         }
         
-        var row = $('<tr><td colspan="9"><table><tbody><tr><td class="timecode"></td><td class="note" contenteditable="true"></td><td class="type"></td><td class="comments">0</td><td class="likes">0</td><td class="created"></td><td class="modified"></td><td><button class="like">Like</button><button class="comment">Comment</button></td><td class="status">Local Only</td></tr></tbody></table></td></tr>');
+        var row = $('<tr><td colspan="9"><table><tbody><tr><td class="timecode"></td><td class="note" contenteditable="true"></td><td class="type"></td><td class="comments">0</td><td class="likes">0</td><td class="created"></td><td class="modified"></td><td class="actions"><button class="like">Like</button><button class="comment">Comment</button></td><td class="status">Local Only</td></tr></tbody></table></td></tr>');
         
       // Add class && id to the row
         $(row).attr('id', this.type+this.id).addClass(this.type).find('.type').html(this.type);

@@ -48,6 +48,10 @@ input, button, textarea {
 	border: none;
 }
 
+table {
+	border-spacing: 0;
+}
+
 .clear-fix {
     clear:both;
     float:none;
@@ -242,28 +246,35 @@ p:last-child {
 
 #log_table .type {
 	width: 3%;
+	min-width: 53px;
 }
 
 #log_table .comments {
 	width: 5%;
+	min-width: 91px;
 }
 
 #log_table .likes {
 	width: 3%;
+	min-width: 55px;
 }
 
 #log_table .created {
 	width: 6%;
+	min-width: 81px;
 }
 
 #log_table .modified {
 	width: 6%;
+	min-width: 81px;
 }
 
 #log_table .actions {
 	width: 5%;
+	min-width: 90px;
 }
 
 #log_table .status {
 	width: 4%;
+	min-width: 57px;
 }
