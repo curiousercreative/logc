@@ -191,6 +191,7 @@ p:last-child {
 /* Real stuff */
 #video_container {
 	position: relative;
+	max-width: 640px;
 }
 
 #video {

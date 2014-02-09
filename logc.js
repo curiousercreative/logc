@@ -1,7 +1,7 @@
 $(document).ready(function () {
 // Vars
   video = $('video').get(0);
-  keys = [65, 83, 68, 74, 75, 76, 32, 37, 39];
+  keys = [65, 83, 68, 74, 75, 76, 32, 37, 39]; // keys we are binding event listeners to
   editingField = false;
   userId = 0;
   videoId = 0;
@@ -138,10 +138,10 @@ $(document).ready(function () {
       // prepares an object for storing locally and saving to DB
       this.prepFields = function () {
         return {
-          'timecode': $('.timecode', this.jObj).attr('data-value'),
-          'note': $('.note', this.jObj).text(),
-          'created': $('.created', this.jObj).text(),
-          'modified': $('.modified', this.jObj).text()
+          timecode: $('.timecode', this.jObj).attr('data-value'),
+          note: $('.note', this.jObj).text(),
+          created: $('.created', this.jObj).text(),
+          modified: $('.modified', this.jObj).text()
         }
       }
      
@@ -210,7 +210,7 @@ $(document).ready(function () {
             log.updateLocalStorage('create');
             
           // Remove this item from the updates array
-            for (var z in this.log.tempStorage.update) {
+            for (var z in log.tempStorage.update) {
               if (log.tempStorage.update[z].id == this.id) {
                 log.tempStorage.update.splice(z, 1);
               }
@@ -231,7 +231,7 @@ $(document).ready(function () {
           editingField = false;
         // Check to see if the value changed
           if ($(this).data('old_value') !== $(this).text()) {
-            log.getRowById($(this).parents('tr').attr('id')).onUpdate({'note': $(this).text()});
+            log.getRowById($(this).parents('tr').attr('id')).onUpdate();
           }
         });
       }
@@ -268,18 +268,17 @@ $(document).ready(function () {
         
       }
       
-      this.onUpdate = function (fields) {
-        fields.modified = log.getTimestamp();
+      this.onUpdate = function () {
+      // Update the table modified
+        $(this.jObj).find('.modified').text(log.getTimestamp());
         
       // Update the stored values
-        this.inDB = false;
         this.inLocalStorage = false;
             
+        var action = this.inDB ? 'update' : 'create';
+            
       // saveLocal the update
-        log.saveLocal('update', log.prepLogObj(this.type, this.id, fields), this.inLocalStorage);
-        
-      // Update the table modified
-        $(this).parents('tr').find('.modified').text(fields.modified);
+        log.saveLocal(action, log.prepLogObj(this.type, this.id, this.prepFields()), this.inLocalStorage);
       }
      
     // Helper methods
@@ -429,20 +428,18 @@ $(document).ready(function () {
     }
     // saveLocal to tempStorage and localStorage
     this.saveLocal = function (action, logObj, inLocalStorage) {
-    // Add to temp storage
-      if (action == 'remove') {
-      // Add to temp storage
-        log.tempStorage[action].push({
-          'type': logObj.type,
-          'id': logObj.id
-        });
-      }
-      else {
-      // Add me to the correct storage array for DB updating
-        if (!this.inDB) {
-          this.tempStorage[action].push(logObj);
+    // Find other instances of this id in query
+      for (var x in log.tempStorage) {
+        for (var y in log.tempStorage[x]) {
+          if (log.tempStorage[x][y].id == logObj.id) {
+            log.tempStorage[x].splice(y, 1);
+            break;
+          }
         }
       }
+    
+    // Add me to the correct storage array for DB updating
+      this.tempStorage[action].push(logObj);
     
     // Update localStorage
       if (!inLocalStorage) this.updateLocalStorage(action);
@@ -453,6 +450,18 @@ $(document).ready(function () {
         url: 'update.php',
         data: this.tempStorage,
         success: function (response, status) {
+          if (response.error) alert(response.msg);
+          else {
+            var query;
+            for (var x in response.queries) {
+              if (response.queries[x].success) {
+              // get the correct obj and fire callback
+                query = log.getObj(response.queries[x].type, response.queries[x].oldId);
+                query.dbSaveCallback();
+              }
+              else alert('external db was not able to save this row');
+            }
+          }
           console.log(response);
         }
       })
