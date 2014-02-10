@@ -87,7 +87,7 @@
         // execute the query
             if (mysql_query($query)) {
                 $responseFields = array('oldId'=>$remove['id'], 'type'=>$remove['type'], 'action'=>'delete');
-                switch($create['type']) {
+                switch($remove['type']) {
                     case 'like':
                     case 'comment':
                         $responseFields['rowId'] = $fields['rowId'];
@@ -105,7 +105,7 @@
     if (
         (isset($_REQUEST['remove']) && !empty($_REQUEST['remove']))
         || (isset($_REQUEST['update']) && !empty($_REQUEST['update']))
-        || (isset($_REQUEST['delete']) && !empty($_REQUEST['delete']))
+        || (isset($_REQUEST['create']) && !empty($_REQUEST['create']))
     ) {
     // Response class that gets encoded and sent back
         $response = new Response();
