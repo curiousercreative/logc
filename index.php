@@ -53,7 +53,7 @@
       <td class="likes">'.$likeCount.'</td>
       <td class="created">'.$log->created.'</td>
       <td class="modified">'.$log->modified.'</td>
-      <td class="actions"><button class="like">Like</button><!-- <button class="comment">Comment</button> --></td>
+      <td class="actions"><button class="like">Like</button><button class="delete">delete</button><!-- <button class="comment">Comment</button> --></td>
       <td class="status">Remote</td>
     </tr>';
     }

@@ -30,24 +30,8 @@
     }
     
     function create($creates) {
-    // Response class that gets encoded and sent back
-        $response = new Response();
-        
-    // Connect to db
-        if (!connect()) {
-            $response->error = true;
-            $response->message = 'could not connect to db';
-            echo json_encode($response);
-            exit;
-        }
-    // Select db
-        else if (!mysql_select_db('logc')) {
-            $response->error = true;
-            $response->message = 'could not select db';
-            echo json_encode($response);
-            exit;
-        }
-         
+        $results = array();
+    
     // iterate through queries, adding each to our response
         foreach ($creates AS $create) {
         // Build our fields array
@@ -75,7 +59,7 @@
         // execute the query
             if (mysql_query('INSERT INTO `'.$table.'` (`'.implode('`,`', $keys).'`) VALUES (\''.implode('\',\'', $values).'\')')) {
                 $id = mysql_insert_id();
-                $responseFields = array('oldId'=>$create['id'], 'id'=>$id, 'type'=>$create['type']);
+                $responseFields = array('oldId'=>$create['id'], 'id'=>$id, 'type'=>$create['type'], 'action'=>'create');
                 switch($create['type']) {
                     case 'like':
                     case 'comment':
@@ -83,24 +67,73 @@
                         $responseFields['rowType'] = $fields['rowType'];
                 }
                     
-                array_push($response->queries, new ResponseQuery($responseFields));
+                array_push($results, new ResponseQuery($responseFields));
             }
-            else array_push($response->queries, new ResponseQuery(array('success'=>false)));
+            else array_push($results, new ResponseQuery(array('success'=>false)));
         }
         
-    // Send the response back
+        return $results;
+    }
+    
+    function remove($removes) {     
+        $results = array();
+    
+    // iterate through queries, adding each to our response
+        foreach ($removes AS $remove) {
+        // Build our query
+            $table = $remove['type'] == 'transcription' || $remove['type'] == 'log' ? 'rows' : $remove['type'].'s';
+            $query = 'DELETE FROM `'.$table.'` WHERE id='.$remove['id'];
+        
+        // execute the query
+            if (mysql_query($query)) {
+                $responseFields = array('oldId'=>$remove['id'], 'type'=>$remove['type'], 'action'=>'delete');
+                switch($create['type']) {
+                    case 'like':
+                    case 'comment':
+                        $responseFields['rowId'] = $fields['rowId'];
+                        $responseFields['rowType'] = $fields['rowType'];
+                }
+                array_push($results, new ResponseQuery($responseFields));
+            }
+            else array_push($results, new ResponseQuery(array('success'=>false)));
+        }
+        
+        return $results;
+    }
+    
+// Log updates
+    if (
+        (isset($_REQUEST['remove']) && !empty($_REQUEST['remove']))
+        || (isset($_REQUEST['update']) && !empty($_REQUEST['update']))
+        || (isset($_REQUEST['delete']) && !empty($_REQUEST['delete']))
+    ) {
+    // Response class that gets encoded and sent back
+        $response = new Response();
+        
+    // Connect to db
+        if (!connect()) {
+            $response->error = true;
+            $response->message = 'could not connect to db';
+            echo json_encode($response);
+            exit;
+        }
+    // Select db
+        else if (!mysql_select_db('logc')) {
+            $response->error = true;
+            $response->message = 'could not select db';
+            echo json_encode($response);
+            exit;
+        }
+        
+        
+        if (isset($_REQUEST['remove']) && !empty($_REQUEST['remove'])) $response->queries = array_merge($response->queries, remove($_REQUEST['remove']));
+        if (isset($_REQUEST['update']) && !empty($_REQUEST['update'])) $response->queries = array_merge($response->queries, update($_REQUEST['update']));
+        if (isset($_REQUEST['create']) && !empty($_REQUEST['create'])) $response->queries = array_merge($response->queries, remove($_REQUEST['create']));
+        
         echo json_encode($response);
     }
-    
-    function remove($removes) {
-        
-    }
-    
-    if (isset($_REQUEST['create']) && !empty($_REQUEST['create'])) create($_REQUEST['create']);
-    if (isset($_REQUEST['update']) && !empty($_REQUEST['update'])) update($_REQUEST['update']);
-    if (isset($_REQUEST['remove']) && !empty($_REQUEST['remove'])) remove($_REQUEST['remove']);
-    
-    if (isset($_REQUEST['videos']) && !empty($_REQUEST['videos'])) {
+// weird bulk video importing thing from hitrecord
+    else if (isset($_REQUEST['videos']) && !empty($_REQUEST['videos'])) {
         $videos = json_decode($_REQUEST['videos']);
         $videos = array_reverse($videos);
         

@@ -3,7 +3,7 @@ $(document).ready(function () {
   video = $('video').get(0);
   keys = [65, 83, 68, 74, 75, 76, 32, 37, 39]; // keys we are binding event listeners to
   editingField = false;
-  actions = ['create', 'update', 'delete'];
+  actions = ['create', 'update', 'remove'];
   
 // Classes
   Log = function () {
@@ -11,7 +11,7 @@ $(document).ready(function () {
     this.tempStorage = {
       'create' : new Array(),
       'update' : new Array(),
-      'delete' : new Array()
+      'remove' : new Array()
     }
     this.rows = new Array(); // An array of all rows
     
@@ -158,9 +158,9 @@ $(document).ready(function () {
         }
         
         // this is a table within a table for commenting purposes
-        //var row = $('<tr><td colspan="9"><table><tbody><tr><td class="timecode"></td><td class="note" contenteditable="true"></td><td class="type"></td><td class="comments">0</td><td class="likes">0</td><td class="created"></td><td class="modified"></td><td class="actions"><button class="like">Like</button><button class="comment">Comment</button></td><td class="status">Local Only</td></tr></tbody></table></td></tr>');
+        //var row = $('<tr><td colspan="9"><table><tbody><tr><td class="timecode"></td><td class="note" contenteditable="true"></td><td class="type"></td><td class="comments">0</td><td class="likes">0</td><td class="created"></td><td class="modified"></td><td class="actions"><button class="like">Like</button><button class="comment">Comment</button></td><td class="status">Local</td></tr></tbody></table></td></tr>');
         
-        var row = $('<tr><td class="timecode"></td><td class="note" contenteditable="true"></td><td class="type"></td><td class="comments">0</td><td class="likes">0</td><td class="created"></td><td class="modified"></td><td class="actions"><button class="like">Like</button><!-- <button class="comment">Comment</button> --></td><td class="status">Local Only</td></tr>');
+        var row = $('<tr><td class="timecode"></td><td class="note" contenteditable="true"></td><td class="type"></td><td class="comments">0</td><td class="likes">0</td><td class="created"></td><td class="modified"></td><td class="actions"><button class="like">Like</button><button class="delete">delete</button><!-- <button class="comment">Comment</button> --></td><td class="status">Local</td></tr>');
         
       // Add class && id to the row
         $(row).attr('id', this.type+this.id).addClass(this.type).find('.type').html(this.type);
@@ -177,12 +177,9 @@ $(document).ready(function () {
         
       // Add focus & blur listener for the note
         this.addFocusBlurListener();
-          
-      // Add click and hover listener for like button
-        this.addLikeListeners();
       
-      // Add click and hover listener for comment button
-        this.addCommentListeners();
+      // Listeners for all row buttons
+        this.addButtonListeners();
         
       // Set focus to the note
         if (fields.note) $('.note', row).text(fields.note);
@@ -195,31 +192,27 @@ $(document).ready(function () {
       this.updateFromLocalStorage = function (fields) {
       // Update browser
         for (var x in fields) {
-          $('.'+x, this.jObj).text(fields[x]);
-        }
-        
-      // Update storages
-        for (var x in log.tempStorage.create) {
-        // Check to see if it's waiting to be created in the DB and add the updates to it
-          if (log.tempStorage.create[x].id == this.id) {
-          // Overwrite with update fields
-            for (var y in fields) {
-              log.tempStorage.create[x].fields[y] = fields[y];
-            }
-          
-          // Save the temp updates to localStorage
-            log.updateLocalStorage(['create']);
-            
-          // Remove this item from the updates array
-            for (var z in log.tempStorage.update) {
-              if (log.tempStorage.update[z].id == this.id) {
-                log.tempStorage.update.splice(z, 1);
-              }
-            }
-          
-          // Save the temp updates to localStorage
-            log.updateLocalStorage(['update']);
+          if (x == 'timecode') {
+            $('.timecode', this.jObj).attr('data-value', fields[x]).text(log.formatTimecode(fields[x]));
           }
+          else $('.'+x, this.jObj).text(fields[x]);
+        }
+      
+      // Update the status
+        $('.status', this.jObj).text('Local');
+      }
+      
+      this.destroy = function () {
+      // Remove this row
+        // Add the query to localStorage
+        log.addToLocal('remove', log.prepLogObj(this.type, this.id), false);
+        
+        // Remove the markup
+        this.jObj.remove();
+        
+        for (var x in log.rows) {
+          if (log.rows[x].id == this.id) log.rows.splice(x, 1);
+          break;
         }
       }
       
@@ -265,18 +258,37 @@ $(document).ready(function () {
         });
       }
       
+      this.addDeleteListeners = function () {
+      // Click
+        $('button.delete', this.jObj).on('click', function (e) {
+        // what's my parent's obj?
+          var parentRow = log.getRowById($(this).parents('tr').attr('id'));
+          
+          parentRow.destroy();
+        });
+      }
+      
       this.addCommentListeners = function () {
         
       }
       
+      this.addButtonListeners = function () {
+        this.addLikeListeners();
+        this.addDeleteListeners();
+        this.addCommentListeners;
+      }
+      
       this.onUpdate = function () {
       // Update the table modified
-        $(this.jObj).find('.modified').text(log.getTimestamp());
+        this.jObj.find('.modified').text(log.getTimestamp());
+            
+        var action = this.inDB ? 'update' : 'create';
         
       // Update the stored values
         this.inLocalStorage = false;
-            
-        var action = this.inDB ? 'update' : 'create';
+        
+      // Update the status
+        $('.status', this.jObj).text('Local');
             
       // addToLocal the update
         log.addToLocal(action, log.prepLogObj(this.type, this.id, this.prepFields()), this.inLocalStorage);
@@ -305,12 +317,9 @@ $(document).ready(function () {
       
       // Add focus & blur listener for the note
         this.addFocusBlurListener();
-          
-      // Add click and hover listener for like button
-        this.addLikeListeners();
       
-      // Add click and hover listener for comment button
-        this.addCommentListeners();
+      // Listeners for row buttons    
+        this.addButtonListeners();
       }
       // Loaded from localStorage
       else if (this.inLocalStorage) this.jObj = this.createTableRow(fields);
@@ -374,33 +383,14 @@ $(document).ready(function () {
         for (var x in updates) {
           switch(updates[x].type) {
             case 'log':
-              for (var y in this.logs) {
-                if (this.logs[y].id == updates[x].id) {
-                  this.logs[y].updateFromLocalStorage(updates[x].fields);
-                }
-              }
-              break;
             case 'transcription':
-              for (var y in this.transcriptions) {
-                if (this.transcriptions[y].id == updates[x].id) {
-                  this.transcriptions[y].updateFromLocalStorage(updates[x].fields);
+              for (var y in this.rows) {
+                if (this.rows[y].id == updates[x].id) {
+                  this.rows[y].updateFromLocalStorage(updates[x].fields);
                 }
               }
               break;
-            case 'like':
-              for (var y in this.likes) {
-                if (this.likes[y].id == updates[x].id) {
-                  this.likes[y].updateFromLocalStorage(updates[x].fields);
-                }
-              }
-              break;
-            case 'comment':
-              for (var y in this.comments) {
-                if (this.comments[y].id == updates[x].id) {
-                  this.comments[y].updateFromLocalStorage(updates[x].fields);
-                }
-              }
-              break;
+            // TODO: what to do for likes and comments
           }
         }
       }
@@ -410,34 +400,16 @@ $(document).ready(function () {
         var removes = JSON.parse(localStorage.remove);
         for (var x in removes) {
           switch(removes[x].type) {
-            case 'log_notes':
-              for (var y in this.logs) {
-                if (this.logs[y].id == removes[x].id) {
-                  this.logs[y].remove(removes[x].fields);
-                }
-              }
-              break;
-            case 'transcriptions':
-              for (var y in this.transcriptions) {
-                if (this.transcriptions[y].id == removes[x].id) {
-                  this.transcriptions[y].remove(removes[x].fields);
-                }
+            case 'log':
+            case 'transcription':
+              for (var y in this.rows) {
+                console.log('checking delete rows');
+                if (this.rows[y].id == removes[x].id) this.rows[y].destroy();
               }
               break;
             case 'likes':
-              for (var y in this.likes) {
-                if (this.likes[y].id == removes[x].id) {
-                  this.likes[y].remove(removes[x].fields);
-                }
-              }
-              break;
             case 'comments':
-              for (var y in this.comments) {
-                if (this.comments[y].id == removes[x].id) {
-                  this.comments[y].remove(removes[x].fields);
-                }
-              }
-              break;
+            // TODO: loading deletes for likes and comments
           }
         }
       }
@@ -490,16 +462,25 @@ $(document).ready(function () {
         method: 'POST',
         data: this.tempStorage,
         success: function (response, status) {
+          console.log(response);
           response = JSON.parse(response);
           if (response.error) alert(response.msg);
           else {
             var obj;
             for (var x in response.queries) {
               if (response.queries[x].success) {
-              // get the correct obj and fire callback
-                obj = !response.queries[x].rowId ? log.getObj(response.queries[x].type, response.queries[x].oldId) : log.getObj(response.queries[x].type, response.queries[x].oldId, response.queries[x].rowId, response.queries[x].rowType);
-                if (obj) log.dbCallback(obj, response.queries[x].id);
-                else console.log('could not find obj with id:'+response.queries[x].oldId);
+                switch (response.queries[x].action) {
+                    case 'remove':
+                      log.dbDeleteCallback();
+                      break;
+                    case 'update':
+                    case 'create':
+                    // get the correct obj and fire callback
+                      obj = !response.queries[x].rowId ? log.getObj(response.queries[x].type, response.queries[x].oldId) : log.getObj(response.queries[x].type, response.queries[x].oldId, response.queries[x].rowId, response.queries[x].rowType);
+                      if (obj) log.dbCreateCallback(obj, response.queries[x].id);
+                      else console.log('could not find obj with id:'+response.queries[x].oldId);
+                      break;
+                  }
               }
               else alert('external db was not able to save this row');
             }
@@ -523,7 +504,7 @@ $(document).ready(function () {
       
       return logObj;
     }
-    this.dbCallback = function (obj, id) {
+    this.dbCreateCallback = function (obj, id) {
     // set inDB flag
       obj.inDB = true;
       
@@ -538,6 +519,9 @@ $(document).ready(function () {
       $('.status', obj.jObj).text('Remote');
       
       return true;
+    }
+    this.dbDeleteCallback = function () {      
+    
     }
     
   // Helper methods
@@ -640,22 +624,15 @@ $(document).ready(function () {
 // Functions
   bindKeys = function () {
     $(window).keydown(function (e) {
-      if (keys.indexOf(e.which) != -1) {
-        if (e.shiftKey && e.metaKey) {
-          switch (e.which) {
-            case 83: //s
-              e.preventDefault();
-              log.saveDB();
-              break;
-          }
-        }
-        else if (!editingField || e.metaKey) {
+      if (keys.indexOf(e.which) != -1) {        
+      // hotkeys that are only accessible when field isn't being edited or when hotkey combo is used
+        if ( !editingField || (e.metaKey && e.shiftKey) ) {
           e.preventDefault();
           switch (e.which) {
             case 65: //a
               new log.Row('log');
               break;
-            case 83: //s
+            case 84: //t
               new log.Row('transcription');
               break;
             case 68: //d
@@ -674,14 +651,32 @@ $(document).ready(function () {
               player.faster();
               break;
             case 37: //<-
-              if (e.shiftKey) player.rr(30);
-              else player.rr();
+              player.rr();
               break;
             case 39: //->
-              if (e.shiftKey) player.ff(30);
-              else player.ff();
+              player.ff();
               break;
           }  
+        }
+        
+      // Special hotkey combos that are always accessible
+        if (e.shiftKey && e.metaKey) {
+          switch (e.which) {
+            case 83: //s save to remote db
+              e.preventDefault();
+              log.saveDB();
+              break;
+          }
+        }
+        else if (e.shiftKey) {
+          switch (e.which) {
+            case 37: //<- rewind 30 seconds
+              player.rr(30);
+              break;
+            case 39: //->
+              player.ff(30);
+              break;
+          }
         }
       }
     }); 
