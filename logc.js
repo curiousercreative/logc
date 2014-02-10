@@ -641,9 +641,9 @@ $(document).ready(function () {
     $(window).keydown(function (e) {
       if (keys.indexOf(e.which) != -1) {
         if (e.shiftKey) {
-          e.preventDefault();
           switch (e.which) {
             case 83: //s
+              e.preventDefault();
               log.saveDB();
               break;
           }
