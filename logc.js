@@ -5,6 +5,7 @@ $(document).ready(function () {
   editingField = false;
   userId = 0;
   videoId = 0;
+  actions = ['create', 'update', 'delete'];
   
 // Classes
   Log = function () {
@@ -44,10 +45,11 @@ $(document).ready(function () {
         this.destroy = function () {
         // Do I need to be removed from the DB?
           if (this.inDB) {
-            log.saveLocal('remove', this);
+            log.addToLocal('remove', this);
           }
           else if (this.inLocalStorage) {
-            log.removeFromLocalStorage(this.id, new Array('create'));
+            log.removeFromLocal(this.id, ['create']);
+            log.updateLocalStorage(['create']);
           }
         
         // Update like count
@@ -69,7 +71,7 @@ $(document).ready(function () {
         
       // Save to array for updating DB
         if (!this.inDB) {
-          log.saveLocal('create', log.prepLogObj('like', this.id, this.prepFields()), this.inLocalStorage);
+          log.addToLocal('create', log.prepLogObj('like', this.id, this.prepFields()), this.inLocalStorage);
           this.inLocalStorage = true;
         }
       }
@@ -93,12 +95,16 @@ $(document).ready(function () {
         this.destroy = function () {
         // Do I need to be removed from the DB?
           if (this.inDB) {
-            log.saveLocal('remove', this);
+            log.addToLocal('remove', this);
           }
           else if (this.inLocalStorage) {
-            log.removeFromLocalStorage(this.id, new Array('create'));
+            log.removeFromLocal(this.id, ['create']);
+            log.updateLocalStorage(['create']);
           }
-          else log.removeFromLocalStorage(this.id, new Array('update'));
+          else {
+            log.removeFromLocal(this.id, ['update']);
+            log.updateLocalStorage(['update']);
+          }
         
         // Update like count
           $('.comments', this.parentRow.jObj).html(parseInt($('.comments', this.parentRow.jObj).text()) - 1);
@@ -116,7 +122,7 @@ $(document).ready(function () {
       
       // Save to array for updating DB
         if (!this.inDB) {
-          log.saveLocal('create', log.prepLogObj('comment', this.id, this.prepFields()), this.inLocalStorage);
+          log.addToLocal('create', log.prepLogObj('comment', this.id, this.prepFields()), this.inLocalStorage);
           this.inLocalStorage = true;
         }
         
@@ -207,7 +213,7 @@ $(document).ready(function () {
             }
           
           // Save the temp updates to localStorage
-            log.updateLocalStorage('create');
+            log.updateLocalStorage(['create']);
             
           // Remove this item from the updates array
             for (var z in log.tempStorage.update) {
@@ -217,7 +223,7 @@ $(document).ready(function () {
             }
           
           // Save the temp updates to localStorage
-            log.updateLocalStorage('update');
+            log.updateLocalStorage(['update']);
           }
         }
       }
@@ -277,8 +283,8 @@ $(document).ready(function () {
             
         var action = this.inDB ? 'update' : 'create';
             
-      // saveLocal the update
-        log.saveLocal(action, log.prepLogObj(this.type, this.id, this.prepFields()), this.inLocalStorage);
+      // addToLocal the update
+        log.addToLocal(action, log.prepLogObj(this.type, this.id, this.prepFields()), this.inLocalStorage);
       }
      
     // Helper methods
@@ -310,18 +316,22 @@ $(document).ready(function () {
       
     // Save to array for updating DB
       if (!this.inDB) {
-        log.saveLocal('create', log.prepLogObj(this.type, this.id, this.prepFields()), this.inLocalStorage);
+        log.addToLocal('create', log.prepLogObj(this.type, this.id, this.prepFields()), this.inLocalStorage);
       }
     }
     
   // == Storage methods
     // Saves tempStorage (memory) into browser's persisent localStorage 
-    this.updateLocalStorage = function (action) {
-    // If there are items to send to the server, JSON stringify it
-      if (this.tempStorage[action].length !== 0) {
-        localStorage[action] = JSON.stringify(this.tempStorage[action]);
+    this.updateLocalStorage = function (actions) {
+      if (!actions) var actions = window.actions;
+      
+      for (var x in actions) {
+        // If there are items to send to the server, JSON stringify it
+        if (this.tempStorage[actions[x]].length !== 0) {
+          localStorage[actions[x]] = JSON.stringify(this.tempStorage[actions[x]]);
+        }
+        else delete localStorage[actions[x]];
       }
-      else delete localStorage[action];
     }
     // Loads localStorage log objects into the temp storage and browser
     this.loadLocalStorage = function () {
@@ -426,8 +436,8 @@ $(document).ready(function () {
         }
       }
     }
-    // saveLocal to tempStorage and localStorage
-    this.saveLocal = function (action, logObj, inLocalStorage) {
+    // addToLocal to tempStorage and localStorage
+    this.addToLocal = function (action, logObj, inLocalStorage) {
     // Find other instances of this id in query
       for (var x in log.tempStorage) {
         for (var y in log.tempStorage[x]) {
@@ -442,29 +452,49 @@ $(document).ready(function () {
       this.tempStorage[action].push(logObj);
     
     // Update localStorage
-      if (!inLocalStorage) this.updateLocalStorage(action);
+      if (!inLocalStorage) this.updateLocalStorage([action]);
     }
+  // Remove query for temp storage
+    this.removeFromLocal = function (id, actions) {      
+      if (!actions) var actions = window.actions;
+      
+      for (var x in actions) {
+        for (var y in this.tempStorage[actions[x]]) {
+          if (this.tempStorage[actions[x]][y].id == id) {
+            this.tempStorage[actions[x]].splice(y, 1);
+            return true;
+          }
+        }
+      }
+      
+      return false;
+    }
+    
     // Saves localStorage to server DB
     this.saveDB = function () {
       $.ajax({
         url: 'update.php',
         data: this.tempStorage,
         success: function (response, status) {
+          response = JSON.parse(response);
           if (response.error) alert(response.msg);
           else {
             var query;
             for (var x in response.queries) {
               if (response.queries[x].success) {
               // get the correct obj and fire callback
-                query = log.getObj(response.queries[x].type, response.queries[x].oldId);
-                query.dbSaveCallback();
+                query = !response.queries[x].rowId ? log.getObj(response.queries[x].type, response.queries[x].oldId) : log.getObj(response.queries[x].type, response.queries[x].oldId, response.queries[x].rowId, response.queries[x].rowType);
+                log.dbCallback(query, response.queries[x].id);
               }
               else alert('external db was not able to save this row');
             }
+            log.updateLocalStorage();
+            // TODO: remove the please wait
           }
-          console.log(response);
+          //console.log(response);
         }
-      })
+      });
+      // TODO: add a please wait
     }
     // prepares an object for storing locally and saving to DB
     this.prepLogObj = function (type, id, fields) {
@@ -478,7 +508,18 @@ $(document).ready(function () {
       
       return logObj;
     }
-  
+    this.dbCallback = function (obj, id) {
+    // set inDB flag
+      obj.inDB = true;
+      
+    // remove from local
+      if (log.removeFromLocal(obj.id)) obj.inLocalStorage = false;
+      
+    // Update the ID
+      obj.jObj.attr('id', obj.type+id);
+      obj.id = id;
+    }
+    
   // Helper methods
     this.formatTimecode = function (secs) {
       time = '';
@@ -527,20 +568,18 @@ $(document).ready(function () {
   
       return false;
     }
-    this.removeFromLocalStorage = function(id, actions) {
-      if (typeof(actions) == 'string') actions = new Array(actions);
-      console.log(id);
-      for (var x in actions) {
-        for (var y in this.tempStorage[actions[x]]) {
-          if (this.tempStorage[actions[x]][y].id == id) {
-          // Remove from the tempStorage
-            this.tempStorage[actions[x]].splice(y, 1);
-            
-          // Update the localStorage
-            this.updateLocalStorage(actions[x]);
-            
-            return true;
-          }
+    this.getObj = function (type, id, rowId, rowType) {
+    // for like and comments
+      if (rowId && rowType) {
+        var row = this.getRowById(rowId, rowType);
+        for (var x in row[type+'s']) {
+          if (row[type+'s'][x].id == id) return row[type+'s'][x];
+        }
+      }
+    // for transcriptions and logs
+      else {
+        for (var x in this[type+'s']) {
+          if (this[type+'s'][x].id == id) return this[type+'s'][x];
         }
       }
       
