@@ -302,6 +302,7 @@ $(document).ready(function () {
       // Loaded from the DB, exists in markup already
       if (this.inDB) {
         this.jObj = $('#'+this.type + this.id);
+      
       // Add focus & blur listener for the note
         this.addFocusBlurListener();
           
@@ -445,7 +446,7 @@ $(document).ready(function () {
     this.loadFromRemote = function () {
     // Load all of the rows
       $('#log_table tbody tr').each(function () {
-        new log.Row($('type', this).text(), parseInt($(this).attr('id').replace(/[^\d]+/g, '')), null, false, true);
+        new log.Row($('.type', this).text(), parseInt($(this).attr('id').replace(/[^\d]+/g, '')), null, false, true);
       });
     }
     // addToLocal to tempStorage and localStorage
@@ -640,7 +641,7 @@ $(document).ready(function () {
   bindKeys = function () {
     $(window).keydown(function (e) {
       if (keys.indexOf(e.which) != -1) {
-        if (e.shiftKey) {
+        if (e.shiftKey && e.metaKey) {
           switch (e.which) {
             case 83: //s
               e.preventDefault();
