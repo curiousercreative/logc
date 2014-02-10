@@ -878,4 +878,6 @@ $(document).ready(function () {
   player = new Player();
   
   bindKeys();
+  
+  $('.footable').footable();
 });
