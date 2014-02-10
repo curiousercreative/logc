@@ -192,6 +192,8 @@ $(document).ready(function () {
         
         this.addTimecodeListener();
         
+        this.addTypeListener();
+        
       // Set focus to the note
         if (fields.note) $('.note', row).text(fields.note);
         else if (!this.inLocalStorage) $('.note', row).focus();
@@ -292,9 +294,29 @@ $(document).ready(function () {
       }
       
       this.addTimecodeListener = function () {
+      // Jump to the timecode if it's clicked
+        $('.timecode', this.jObj).on('click', function () {
+          video.currentTime = $(this).attr('data-value');
+        });
+      
       // Let the timecode be edited if it is double-clicked on
         $('.timecode', this.jObj).dblclick(function () {
           $(this).attr('contenteditable', 'true').focus();
+          editingField = true;
+        });
+        
+      // If enter is hit, blur
+        $('.timecode', this.jObj).on('keydown', function (e) {
+          switch (e.which) {
+            case 13:
+              e.preventDefault();
+              $(this).blur();
+              break;
+            case 27:
+              e.preventDefault();
+              $(this).html(log.formatTimecode($(this).attr('data-value'))).blur();
+              break;
+          }
         });
         
       // Update the data-value when blur
@@ -313,6 +335,72 @@ $(document).ready(function () {
             
             log.getRowById($(this).closest('tr').attr('id')).onUpdate();
           }
+          editingField = false;
+        });
+      }
+      
+      this.addTypeListener = function () {
+      // Let the timecode be edited if it is double-clicked on
+        $('.type', this.jObj).dblclick(function () {
+          $(this).attr({
+            'contenteditable': 'true',
+            'data-old-value': $(this).html()
+          }).focus();
+          
+          editingField = true;
+        });
+        
+      // If enter is hit, blur
+        $('.type', this.jObj).on('keydown', function (e) {
+          switch (e.which) {
+            case 13: // enter 
+              e.preventDefault();
+              $(this).blur();
+              break;
+            case 27: // esc
+              e.preventDefault();
+              $(this).html($(this).attr('data-old-value')).blur(); // discard changes
+              break;
+          }
+        });
+        
+      // Update the data-value when blur
+        $('.type', this.jObj).on('blur', function () {
+        // disable contenteditable
+          $(this).removeAttr('contenteditable');
+          
+          switch ($(this).html()) {
+            case $(this).attr('data-old-value'): // nothing changed
+              break;
+            case 'log':
+              var row = log.getRowById($(this).closest('tr').attr('id'));
+              
+            // change the type
+              row.type = 'log';
+              
+            // update the markup
+              row.jObj.attr('id', row.jObj.attr('id').replace('transcription', 'log')).removeClass('transcription').addClass('log');
+              
+            // fire update
+              row.onUpdate();
+              
+              break;
+            case 'transcription':
+              var row = log.getRowById($(this).closest('tr').attr('id'));
+              
+            // change the type
+              row.type = 'transcription';
+              
+            // update the markup
+              row.jObj.attr('id', row.jObj.attr('id').replace('log', 'transcription')).removeClass('log').addClass('transcription');
+              
+            // fire update
+              row.onUpdate();
+              
+              break;
+          }
+            
+          editingField = false;
         });
       }
       
@@ -360,6 +448,8 @@ $(document).ready(function () {
         this.addButtonListeners();
         
         this.addTimecodeListener();
+        
+        this.addTypeListener();
       }
       // Loaded from localStorage
       else if (this.inLocalStorage) this.jObj = this.createTableRow(fields);
@@ -499,6 +589,19 @@ $(document).ready(function () {
     
     // Saves localStorage to server DB
     this.saveDB = function () {
+      var isEmpty = true;
+      for (var x in this.tempStorage) {
+        if (!$.isEmptyObject(this.tempStorage[x])) {
+          isEmpty = false;
+          break;
+        }
+      }
+      
+      if (isEmpty) {
+        console.log('no local changes to be saved');
+        return;
+      }
+      
       $.ajax({
         url: 'update.php',
         method: 'POST',

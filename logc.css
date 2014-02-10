@@ -243,6 +243,7 @@ p:last-child {
 
 #log_table .timecode {
 	width: 5%;
+	white-space: nowrap;
 }
 
 #log_table .type {

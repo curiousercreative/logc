@@ -33,6 +33,7 @@
             switch ($update['type']) {
                 case 'log':
                 case 'transcription':
+                    $fields['type'] = $update['type'];
                     $fields['modifiedLastBy'] = $update['userId'];
                     $table = 'rows';
                     break;
