@@ -39,10 +39,8 @@
             }
         
         // Build our query    
-            $values = array_map('mysql_real_escape_string', array_values($fields));
-            $keys = array_keys($fields);
             $set = '';
-            foreach($update['fields'] AS $key => $val) {
+            foreach($fields AS $key => $val) {
                 $set .= " ".mysql_real_escape_string($key)."='".mysql_real_escape_string($val)."',";
             }
             $set = trim($set, ',');

@@ -137,12 +137,21 @@ $(document).ready(function () {
     
     // methods
       // prepares an object for storing locally and saving to DB
-      this.prepFields = function () {
-        return {
-          timecode: $('.timecode', this.jObj).attr('data-value'),
-          note: $('.note', this.jObj).text(),
-          created: $('.created', this.jObj).text(),
-          modified: $('.modified', this.jObj).text()
+      this.prepFields = function (action) {
+        if (action == 'update') {
+          return {
+            timecode: $('.timecode', this.jObj).attr('data-value'),
+            note: $('.note', this.jObj).text(),
+            modified: $('.modified', this.jObj).text()
+          }
+        }
+        else {
+          return {
+            timecode: $('.timecode', this.jObj).attr('data-value'),
+            note: $('.note', this.jObj).text(),
+            created: $('.created', this.jObj).text(),
+            modified: $('.modified', this.jObj).text()
+          }
         }
       }
      
@@ -180,6 +189,8 @@ $(document).ready(function () {
       
       // Listeners for all row buttons
         this.addButtonListeners();
+        
+        this.addTimecodeListener();
         
       // Set focus to the note
         if (fields.note) $('.note', row).text(fields.note);
@@ -300,7 +311,7 @@ $(document).ready(function () {
           // Copy the seconds to data-value and fire onUpdate
             $(this).attr('data-value', sec);
             
-            log.getRowById($(this).attr('id')).onUpdate();
+            log.getRowById($(this).closest('tr').attr('id')).onUpdate();
           }
         });
       }
@@ -318,7 +329,7 @@ $(document).ready(function () {
         $('.status', this.jObj).text('Local');
             
       // addToLocal the update
-        log.addToLocal(action, log.prepLogObj(this.type, this.id, this.prepFields()), this.inLocalStorage);
+        log.addToLocal(action, log.prepLogObj(this.type, this.id, this.prepFields(action)), this.inLocalStorage);
       }
      
     // Helper methods
@@ -347,6 +358,8 @@ $(document).ready(function () {
       
       // Listeners for row buttons    
         this.addButtonListeners();
+        
+        this.addTimecodeListener();
       }
       // Loaded from localStorage
       else if (this.inLocalStorage) this.jObj = this.createTableRow(fields);
