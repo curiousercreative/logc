@@ -15,8 +15,7 @@ $(document).ready(function () {
       'update' : new Array(),
       'delete' : new Array()
     }
-    this.logs = new Array(); // An array of all Log notes
-    this.transcriptions = new Array(); // An array of all transcriptions
+    this.rows = new Array(); // An array of all rows
     
   // Classes
     this.Row = function (type, id, fields, inLocalStorage, inDB) {
@@ -38,7 +37,6 @@ $(document).ready(function () {
       // Methods
         this.prepFields = function () {
           return {
-            'rowType': this.parentRow.type,
             'rowId': this.parentRow.id
           }
         }
@@ -87,7 +85,6 @@ $(document).ready(function () {
       // Methods
         this.prepFields = function () {
           return {
-            'rowType': this.parentRow.type,
             'rowId': this.parentRow.id,
             'note': this.jObj.text()
           }
@@ -134,7 +131,7 @@ $(document).ready(function () {
             this.jObj.data('content', this.jObj.text());
             
           // Update the local storage
-            
+          //TODO
           }
         });
       }    
@@ -312,7 +309,7 @@ $(document).ready(function () {
       else this.jObj = this.createTableRow();
       
     // Save to our array of all of this type
-      log[this.type+"s"].push(this);
+      log.rows.push(this);
       
     // Save to array for updating DB
       if (!this.inDB) {
@@ -348,13 +345,13 @@ $(document).ready(function () {
               break;
             case 'like':
             // Find row parent
-              var parentRow = log.getRowById(creates[x].fields.rowId, creates[x].fields.rowType);
+              var parentRow = log.getRowById(creates[x].fields.rowId);
               
               parentRow.like = new parentRow.Like(parentRow, creates[x].id, true);
               break;
             case 'comment':
             // Find row parent first
-              var parentRow = log.getRowById(creates[x].fields.rowId, creates[x].fields.rowType);
+              var parentRow = log.getRowById(creates[x].fields.rowId);
               
               parentRow.comments.push(new parentRow.Comment(parentRow, creates[x].id, true));
               break;
@@ -521,9 +518,7 @@ $(document).ready(function () {
     }
     
   // Helper methods
-    this.formatTimecode = function (secs) {
-      time = '';
-    
+    this.formatTimecode = function (secs) {    
     // Hours
       var hours = parseInt(secs/3600);
       hours = hours > 9 ? hours : "0"+hours;
@@ -548,38 +543,28 @@ $(document).ready(function () {
     this.getTimestamp = function () {
       return Math.round(new Date().getTime() / 1000); 
     }
-    this.getRowById = function (rowId, rowType) {
-    // If we have both id and type
-      if (rowType) {
-        var id = rowId;
-        var type = rowType;
-      }
-    // No type passed, the type and id are a string together
-      else if (typeof(rowId) == 'string') {
-        var id = rowId.replace(/[^\d]+/g, '');
-        var type = rowId.replace(/\d+/g, '');  
-      }
-      else return false;
+    this.getRowById = function (rowId) {
+      var id = typeof(rowId) == 'string' ? rowId.replace(/[^\d]+/g, '') : rowId;
         
     // Look for it
-      for (var x in this[type+'s']) {
-        if (this[type+'s'][x].id == id) return this[type+'s'][x];
+      for (var x in this.rows) {
+        if (this.rows[x].id == id) return this.rows[x];
       }
   
       return false;
     }
-    this.getObj = function (type, id, rowId, rowType) {
+    this.getObj = function (type, id, rowId) {
     // for like and comments
-      if (rowId && rowType) {
-        var row = this.getRowById(rowId, rowType);
+      if (rowId) {
+        var row = this.getRowById(rowId);
         for (var x in row[type+'s']) {
           if (row[type+'s'][x].id == id) return row[type+'s'][x];
         }
       }
     // for transcriptions and logs
       else {
-        for (var x in this[type+'s']) {
-          if (this[type+'s'][x].id == id) return this[type+'s'][x];
+        for (var x in this.rows) {
+          if (this.rows[x].id == id) return this.rows[x];
         }
       }
       

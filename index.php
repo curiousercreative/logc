@@ -1,3 +1,47 @@
+<?php
+  function formatTimecode($secs) {
+  // hours
+    $hours = intval($secs/3600);
+    $hours = $hours > 9 ? $hours : "0".$hours;
+    $secs -= $hours*3600;
+    
+  // $minutes
+    $minutes = intval($secs/60);
+    $minutes = $minutes > 9 ? $minutes : "0".$minutes;
+    $secs -= $minutes*60;
+    
+  // $seconds
+    $seconds = intval($secs);
+    $seconds = $seconds > 9 ? $seconds : "0".$seconds;
+    $secs -= $seconds;
+    
+  // $frames
+    $frames = round(24*$secs);
+    $frames = $frames > 9 ? $frames : "0".$frames;
+    
+    return $hours.":".$minutes.":".$seconds.":".$frames;
+  }
+  
+  function printRows() {
+    include_once('update.php');
+    connect();
+    mysql_select_db('logc');
+    $query = mysql_query('SELECT * FROM rows WHERE videoId=0 ORDER BY timecode');
+    while ($log = mysql_fetch_object($query)) {
+      echo '<tr id="'.$log->type.$log->id.'" class="'.$log->type.'">
+      <td class="timecode" data-value="'.$log->timecode.'">'.formatTimecode($log->timecode).'</td>
+      <td class="note" contenteditable="true">'.$log->note.'</td>
+      <td class="type">'.$log->type.'</td>
+      <td class="comments">dunno</td>
+      <td class="likes">dunno</td>
+      <td class="created">'.$log->created.'</td>
+      <td class="modified">'.$log->modified.'</td>
+      <td class="actions"><button class="like">Like</button><!-- <button class="comment">Comment</button> --></td>
+      <td class="status">Remote</td>
+    </tr>';
+    }
+  }
+?>
 <html>
   <head>
     <title>LogC - Community video logging</title>
@@ -32,9 +76,9 @@
           <dt>space</dt>
             <dd>Play/pause</dd>
           <dt>&larr;</dt>
-            <dd>skip back 5 seconds (hold shift for 30)</dd>
+            <dd>skip back 5 $seconds (hold shift for 30)</dd>
           <dt>&rarr;</dt>
-            <dd>skip ahead 5 seconds (hold shift for 30)</dd>
+            <dd>skip ahead 5 $seconds (hold shift for 30)</dd>
           <dt>a</dt>
             <dd>add log note</dd>
           <dt>s</dt>
@@ -56,6 +100,7 @@
         <th class="status">Status</th>
       </thead>
       <tbody>
+        <?php printRows();?>
       </tbody>
     </table> <!-- end #log_table -->
   </body>

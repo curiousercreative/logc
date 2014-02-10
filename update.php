@@ -57,6 +57,7 @@
                 case 'transcription':
                     $fields['modifiedLastBy'] = $create['userId'];
                     $fields['createdBy'] = $create['userId'];
+                    $fields['type'] = $create['type'];
                     break;
                 case 'like':
                 case 'comment':
@@ -67,13 +68,12 @@
         // Build our query    
             $values = array_map('mysql_real_escape_string', array_values($fields));
             $keys = array_keys($fields);
-            $table = $create['type'].'s';
+            $table = 'rows';
             $query = 'INSERT INTO `'.$table.'` (`'.implode('`,`', $keys).'`) VALUES (\''.implode('\',\'', $values).'\')';
         
         // execute the query
             if (mysql_query('INSERT INTO `'.$table.'` (`'.implode('`,`', $keys).'`) VALUES (\''.implode('\',\'', $values).'\')')) {
-                $row = mysql_query('SELECT id FROM `'.$table.'` WHERE created='.$fields['created']);
-                $id = mysql_fetch_object($row)->id;
+                $id = mysql_insert_id();
                 $responseFields = array('oldId'=>$fields['created'], 'id'=>$id, 'type'=>$create['type']);
                 switch($create['type']) {
                     case 'like':
