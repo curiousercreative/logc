@@ -28,12 +28,17 @@
     mysql_select_db('logc');
     $query = mysql_query('SELECT * FROM rows WHERE videoId=0 ORDER BY timecode');
     while ($log = mysql_fetch_object($query)) {
+      $commentQuery = mysql_query('SELECT parentId FROM comments WHERE parentId='.$log->id);
+      $commentCount = mysql_num_rows($commentQuery);
+      
+      $likeQuery = mysql_query('SELECT rowId FROM likes WHERE rowId='.$log->id);
+      $likeCount = mysql_num_rows($likeQuery);
       echo '<tr id="'.$log->type.$log->id.'" class="'.$log->type.'">
       <td class="timecode" data-value="'.$log->timecode.'">'.formatTimecode($log->timecode).'</td>
       <td class="note" contenteditable="true">'.$log->note.'</td>
       <td class="type">'.$log->type.'</td>
-      <td class="comments">dunno</td>
-      <td class="likes">dunno</td>
+      <td class="comments">'.$commentCount.'</td>
+      <td class="likes">'.$likeCount.'</td>
       <td class="created">'.$log->created.'</td>
       <td class="modified">'.$log->modified.'</td>
       <td class="actions"><button class="like">Like</button><!-- <button class="comment">Comment</button> --></td>
@@ -76,9 +81,9 @@
           <dt>space</dt>
             <dd>Play/pause</dd>
           <dt>&larr;</dt>
-            <dd>skip back 5 $seconds (hold shift for 30)</dd>
+            <dd>skip back 5 seconds (hold shift for 30)</dd>
           <dt>&rarr;</dt>
-            <dd>skip ahead 5 $seconds (hold shift for 30)</dd>
+            <dd>skip ahead 5 seconds (hold shift for 30)</dd>
           <dt>a</dt>
             <dd>add log note</dd>
           <dt>s</dt>

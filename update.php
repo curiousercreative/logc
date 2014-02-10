@@ -58,17 +58,18 @@
                     $fields['modifiedLastBy'] = $create['userId'];
                     $fields['createdBy'] = $create['userId'];
                     $fields['type'] = $create['type'];
+                    $table = 'rows';
                     break;
                 case 'like':
                 case 'comment':
                     $fields['userId'] = $create['userId'];
+                    $table = $create['type'].'s';
             }
             $fields['videoId'] = $create['videoId'];
         
         // Build our query    
             $values = array_map('mysql_real_escape_string', array_values($fields));
             $keys = array_keys($fields);
-            $table = 'rows';
             $query = 'INSERT INTO `'.$table.'` (`'.implode('`,`', $keys).'`) VALUES (\''.implode('\',\'', $values).'\')';
         
         // execute the query

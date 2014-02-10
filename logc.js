@@ -177,15 +177,6 @@ $(document).ready(function () {
       // Add to the log_table
         $('#log_table tbody').prepend(row);
         
-      // Add focus & blur listener for the note
-        this.addFocusBlurListener($('.note', row));
-        
-      // Add click and hover listener for like button
-        this.addLikeListeners($(row));
-      
-      // Add click and hover listener for comment button
-        this.addCommentListeners($(row));
-        
       // Set focus to the note
         if (fields.note) $('.note', row).text(fields.note);
         else $('.note', row).focus();
@@ -226,8 +217,8 @@ $(document).ready(function () {
       }
       
     // Listeners
-      this.addFocusBlurListener = function (jObj) {
-        jObj.on('focus', function () {
+      this.addFocusBlurListener = function () {
+        $('.note', this.jObj).on('focus', function () {
           editingField = true;
           $(this).data('old_value', $(this).text());
         }).on('blur', function () {
@@ -239,9 +230,9 @@ $(document).ready(function () {
         });
       }
       
-      this.addLikeListeners = function (jObj) {
+      this.addLikeListeners = function () {
       // Click
-        $('button.like', jObj).on('click', function (e) {
+        $('button.like', this.jObj).on('click', function (e) {
         // what's my parent's obj?
           var parentRow = log.getRowById($(this).parents('tr').attr('id'));
           
@@ -256,7 +247,7 @@ $(document).ready(function () {
           }
         });
         
-        $('button.like', jObj).hover(function () {
+        $('button.like', this.jObj).hover(function () {
           if ($(this).hasClass('liked')) {
             $(this).text('Unlike');
           }
@@ -267,7 +258,7 @@ $(document).ready(function () {
         });
       }
       
-      this.addCommentListeners = function (jObj) {
+      this.addCommentListeners = function () {
         
       }
       
@@ -308,6 +299,15 @@ $(document).ready(function () {
       // Creating for the first time per user request
       else this.jObj = this.createTableRow();
       
+    // Add focus & blur listener for the note
+      this.addFocusBlurListener();
+        
+    // Add click and hover listener for like button
+      this.addLikeListeners();
+    
+    // Add click and hover listener for comment button
+      this.addCommentListeners();
+      
     // Save to our array of all of this type
       log.rows.push(this);
       
@@ -331,7 +331,7 @@ $(document).ready(function () {
       }
     }
     // Loads localStorage log objects into the temp storage and browser
-    this.loadLocalStorage = function () {
+    this.loadFromLocal = function () {
     // Load the creates
       if (localStorage.create) {
         var creates = JSON.parse(localStorage.create);
@@ -432,6 +432,13 @@ $(document).ready(function () {
           }
         }
       }
+    }
+    // Loads served markup into objects
+    this.loadFromRemote = function () {
+    // Load all of the rows
+      $('#log_table tbody tr').each(function () {
+        new log.Row($('type', this).text(), parseInt($(this).attr('id').replace(/[^\d]+/g, '')), null, false, true);
+      });
     }
     // addToLocal to tempStorage and localStorage
     this.addToLocal = function (action, logObj, inLocalStorage) {
@@ -680,7 +687,8 @@ $(document).ready(function () {
   
 // == Do stuff
   log = new Log();
-  log.loadLocalStorage();
+  log.loadFromRemote();
+  log.loadFromLocal();
   
   player = new Player();
   
