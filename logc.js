@@ -403,8 +403,10 @@ $(document).ready(function () {
             case 'log':
             case 'transcription':
               for (var y in this.rows) {
-                console.log('checking delete rows');
-                if (this.rows[y].id == removes[x].id) this.rows[y].destroy();
+                if (this.rows[y].id == removes[x].id) {
+                  this.rows[y].destroy();
+                  break;
+                }
               }
               break;
             case 'likes':
