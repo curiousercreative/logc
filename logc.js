@@ -205,11 +205,13 @@ $(document).ready(function () {
       this.destroy = function () {
       // Remove this row
         // Add the query to localStorage
-        log.addToLocal('remove', log.prepLogObj(this.type, this.id), false);
+        if (this.inDB) log.addToLocal('remove', log.prepLogObj(this.type, this.id), false);
+        else log.removeFromLocal(this.id);
         
-        // Remove the markup
+      // Remove the markup
         this.jObj.remove();
         
+      // Remove reference to this object
         for (var x in log.rows) {
           if (log.rows[x].id == this.id) log.rows.splice(x, 1);
           break;
@@ -276,6 +278,31 @@ $(document).ready(function () {
         this.addLikeListeners();
         this.addDeleteListeners();
         this.addCommentListeners;
+      }
+      
+      this.addTimecodeListener = function () {
+      // Let the timecode be edited if it is double-clicked on
+        $('.timecode', this.jObj).dblclick(function () {
+          $(this).attr('contenteditable', 'true').focus();
+        });
+        
+      // Update the data-value when blur
+        $('.timecode', this.jObj).on('blur', function () {
+        // disable contenteditable
+          $(this).removeAttr('contenteditable');
+          
+        // decode the timecode and compare
+          var sec = log.decodeTimecode($(this).html());
+          
+        // timecode was improperly formatted, discard changes
+          if (!sec) $(this).html(log.formatTimecode($(this).attr('data-value')));
+          else {
+          // Copy the seconds to data-value and fire onUpdate
+            $(this).attr('data-value', sec);
+            
+            log.getRowById($(this).attr('id')).onUpdate();
+          }
+        });
       }
       
       this.onUpdate = function () {
@@ -549,6 +576,28 @@ $(document).ready(function () {
       
       return hours+":"+minutes+":"+seconds+":"+frames;
     }
+    this.decodeTimecode = function (tc) {
+      var re = /^[0-9]{2}:[0-9]{2}:[0-9]{2}:[0-9]{2}$/;
+      if (!re.test(tc)) return false;
+      else {
+        var seconds = 0;
+        tc = tc.split(':');
+      
+      //multiply the hours by 3600 to get seconds
+        seconds += parseInt(tc[0])*3600;
+        
+      //multiply the minutes by 60 to get seconds
+        seconds += parseInt(tc[1])*3600;
+        
+      //these are seconds
+        seconds += parseInt(tc[2]);
+        
+      //multiply the frames by 1/24 to get seconds
+        seconds += parseInt(tc[3])/24;
+        
+        return seconds;
+      }
+    }
     this.getTimestamp = function () {
       return Math.round(new Date().getTime() / 1000); 
     }
@@ -669,28 +718,17 @@ $(document).ready(function () {
               e.preventDefault();
               return;
             case 37: //<-
-              if (e.shiftKey) player.rr(30);
+              if (!editingField && e.shiftKey && !e.metaKey) player.rr(30);
               else player.rr();
               e.preventDefault();
               return;
             case 39: //->
-              if (e.shiftKey) player.ff(30);
+              if (!editingField && e.shiftKey && !e.metaKey) player.ff(30);
               else player.ff();
               e.preventDefault();
               return;
           }  
         }
-      // Hotkey combos always available
-        else if (e.shiftKey) {
-          switch (e.which) {
-            case 37: //<- rewind 30 seconds
-              player.rr(30);
-              break;
-            case 39: //->
-              player.ff(30);
-              break;
-          }
-        }        
       }
     }); 
   }
