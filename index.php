@@ -1,4 +1,17 @@
 <?php
+  if (isset($_REQUEST['videoId']) && !empty($_REQUEST['videoId'])) {
+    $videoId = $_REQUEST['videoId'];  
+  }
+  else {
+    include_once('update.php');
+    connect();
+    mysql_select_db('logc');
+    $query = mysql_query('SELECT * FROM videos ORDER BY id');
+    while ($video = mysql_fetch_object($query)) {
+      print '<p><a href="/'.$video->id.'">'.$video->title.'</a></p>';
+    }
+    exit;
+  }
   function formatTimecode($secs) {
   // hours
     $hours = intval($secs/3600);
@@ -26,7 +39,7 @@
     include_once('update.php');
     connect();
     mysql_select_db('logc');
-    $query = mysql_query('SELECT * FROM rows WHERE videoId=0 ORDER BY timecode');
+    $query = mysql_query('SELECT * FROM rows WHERE videoId='.mysql_real_escape_string($videoId).' ORDER BY timecode');
     while ($log = mysql_fetch_object($query)) {
       $commentQuery = mysql_query('SELECT parentId FROM comments WHERE parentId='.$log->id);
       $commentCount = mysql_num_rows($commentQuery);
@@ -46,6 +59,13 @@
     </tr>';
     }
   }
+  function printVideoSrc($videoId) {
+    include_once('update.php');
+    connect();
+    mysql_select_db('logc');
+    $query = mysql_query('SELECT src FROM videos WHERE id='.mysql_real_escape_string($videoId));
+    print mysql_fetch_object($query)->src;
+  }
 ?>
 <html>
   <head>
@@ -56,12 +76,16 @@
     
     <link href="footable/footable.css" rel="stylesheet" />
     <link href="logc.css" rel="stylesheet" />
+    <script>
+      userId = '0';
+      videoId = '<?php print $videoId; ?>';
+    </script>
   </head>
   <body>
     <div class="col_container">
       <div class="half col" id="video_container">
         <video id="video" controls>
-          <source src="http://s3.amazonaws.com/hitrecord-prod/record_attachments/1366986/encoded/web_sd/curiouser-1366986.mp4" type="video/mp4">
+          <source src="<?php printVideoSrc($videoId); ?>" type="video/mp4">
         </video>
         <div id="playback_rate" contenteditable="true" tabIndex="-1">1.0</div>
       </div> <!-- end #video_container -->

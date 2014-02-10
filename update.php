@@ -100,4 +100,15 @@
     if (isset($_REQUEST['update']) && !empty($_REQUEST['update'])) update($_REQUEST['update']);
     if (isset($_REQUEST['remove']) && !empty($_REQUEST['remove'])) remove($_REQUEST['remove']);
     
+    if (isset($_REQUEST['videos']) && !empty($_REQUEST['videos'])) {
+        $videos = json_decode($_REQUEST['videos']);
+        $videos = array_reverse($videos);
+        
+        connect();
+        mysql_select_db('logc');
+        foreach($videos AS $video) {
+            mysql_query('INSERT INTO `videos` (`src`, `title`) VALUES (\''.$video->src.'\', \''.$video->title.'\')');
+        }
+    }
+    
 ?>

@@ -3,8 +3,6 @@ $(document).ready(function () {
   video = $('video').get(0);
   keys = [65, 83, 68, 74, 75, 76, 32, 37, 39]; // keys we are binding event listeners to
   editingField = false;
-  userId = 0;
-  videoId = 0;
   actions = ['create', 'update', 'delete'];
   
 // Classes
