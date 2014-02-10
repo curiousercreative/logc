@@ -24,9 +24,41 @@
         return mysql_connect($preferences->db->host, $preferences->db->user, $preferences->db->pass);
     }
     function update($updates) {
+         $results = array();
+    
+    // iterate through queries, adding each to our response
         foreach ($updates AS $update) {
-            mysql_query('UPDATE '.$update['type'].'s WHERE ');
+        // Build our fields array
+            $fields = $update['fields'];
+            switch ($update['type']) {
+                case 'log':
+                case 'transcription':
+                    $fields['modifiedLastBy'] = $update['userId'];
+                    $table = 'rows';
+                    break;
+            }
+        
+        // Build our query    
+            $values = array_map('mysql_real_escape_string', array_values($fields));
+            $keys = array_keys($fields);
+            $set = '';
+            foreach($update['fields'] AS $key => $val) {
+                $set .= " ".mysql_real_escape_string($key)."='".mysql_real_escape_string($val)."',";
+            }
+            $set = trim($set, ',');
+            
+            $query = 'UPDATE `'.$table.'` SET'.$set.' WHERE id='.$update['id'].' LIMIT 1';
+            
+        // execute the query
+            if (mysql_query($query)) {
+                $responseFields = array('id'=>$update['id'], 'oldId'=>$update['id'], 'type'=>$update['type'], 'action'=>'update');
+                    
+                array_push($results, new ResponseQuery($responseFields));
+            }
+            else array_push($results, new ResponseQuery(array('success'=>false)));
         }
+        
+        return $results;
     }
     
     function create($creates) {
@@ -126,9 +158,10 @@
         }
         
         
-        if (isset($_REQUEST['remove']) && !empty($_REQUEST['remove'])) $response->queries = array_merge($response->queries, remove($_REQUEST['remove']));
+        if (isset($_REQUEST['create']) && !empty($_REQUEST['create'])) $response->queries = array_merge($response->queries, create($_REQUEST['create']));
         if (isset($_REQUEST['update']) && !empty($_REQUEST['update'])) $response->queries = array_merge($response->queries, update($_REQUEST['update']));
-        if (isset($_REQUEST['create']) && !empty($_REQUEST['create'])) $response->queries = array_merge($response->queries, remove($_REQUEST['create']));
+        if (isset($_REQUEST['remove']) && !empty($_REQUEST['remove'])) $response->queries = array_merge($response->queries, remove($_REQUEST['remove']));
+        
         
         echo json_encode($response);
     }
