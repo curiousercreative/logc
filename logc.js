@@ -1,7 +1,7 @@
 $(document).ready(function () {
 // Vars
   video = $('video').get(0);
-  keys = [65, 83, 68, 74, 75, 76, 32, 37, 39]; // keys we are binding event listeners to
+  keys = [65, 83, 84, 68, 74, 75, 76, 32, 37, 39]; // keys we are binding event listeners to
   editingField = false;
   actions = ['create', 'update', 'remove'];
   
@@ -44,8 +44,7 @@ $(document).ready(function () {
             log.addToLocal('remove', this);
           }
           else if (this.inLocalStorage) {
-            log.removeFromLocal(this.id, ['create']);
-            log.updateLocalStorage(['create']);
+            log.removeFromLocal(this.id, true, ['create']);
           }
         
         // Update like count
@@ -93,8 +92,7 @@ $(document).ready(function () {
             log.addToLocal('remove', this);
           }
           else if (this.inLocalStorage) {
-            log.removeFromLocal(this.id, ['create']);
-            log.updateLocalStorage(['create']);
+            log.removeFromLocal(this.id, true, ['create']);
           }
           else {
             log.removeFromLocal(this.id, ['update']);
@@ -219,7 +217,7 @@ $(document).ready(function () {
       // Remove this row
         // Add the query to localStorage
         if (this.inDB) log.addToLocal('remove', log.prepLogObj(this.type, this.id), false);
-        else log.removeFromLocal(this.id);
+        else log.removeFromLocal(this.id, true);
         
       // Remove the markup
         this.jObj.remove();
@@ -572,13 +570,14 @@ $(document).ready(function () {
       if (!inLocalStorage) this.updateLocalStorage([action]);
     }
   // Remove query for temp storage
-    this.removeFromLocal = function (id, actions) {      
+    this.removeFromLocal = function (id, updateLocal, actions) {      
       if (!actions) var actions = window.actions;
       
       for (var x in actions) {
         for (var y in this.tempStorage[actions[x]]) {
           if (this.tempStorage[actions[x]][y].id == id) {
             this.tempStorage[actions[x]].splice(y, 1);
+            if (updateLocal) this.updateLocalStorage([actions[x]]);
             return true;
           }
         }
@@ -703,7 +702,7 @@ $(document).ready(function () {
         seconds += parseInt(tc[0])*3600;
         
       //multiply the minutes by 60 to get seconds
-        seconds += parseInt(tc[1])*3600;
+        seconds += parseInt(tc[1])*60;
         
       //these are seconds
         seconds += parseInt(tc[2]);
