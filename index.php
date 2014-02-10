@@ -1,11 +1,13 @@
 <?php
+  include_once('update.php');
+  connect();
+  mysql_select_db('logc');
+  
   if (isset($_REQUEST['videoId']) && !empty($_REQUEST['videoId'])) {
     $videoId = $_REQUEST['videoId'];  
   }
   else {
     include_once('update.php');
-    connect();
-    mysql_select_db('logc');
     $query = mysql_query('SELECT * FROM videos ORDER BY id');
     while ($video = mysql_fetch_object($query)) {
       print '<p><a href="/'.$video->id.'">'.$video->title.'</a></p>';
@@ -35,10 +37,7 @@
     return $hours.":".$minutes.":".$seconds.":".$frames;
   }
   
-  function printRows() {
-    include_once('update.php');
-    connect();
-    mysql_select_db('logc');
+  function printRows($videoId) {
     $query = mysql_query('SELECT * FROM rows WHERE videoId='.mysql_real_escape_string($videoId).' ORDER BY timecode');
     while ($log = mysql_fetch_object($query)) {
       $commentQuery = mysql_query('SELECT parentId FROM comments WHERE parentId='.$log->id);
@@ -60,9 +59,6 @@
     }
   }
   function printVideoSrc($videoId) {
-    include_once('update.php');
-    connect();
-    mysql_select_db('logc');
     $query = mysql_query('SELECT src FROM videos WHERE id='.mysql_real_escape_string($videoId));
     print mysql_fetch_object($query)->src;
   }
@@ -118,18 +114,20 @@
     
     <table id="log_table" class="footable">
       <thead>
-        <th class="timecode">Timecode</th>
-        <th class="note">Note</th>
-        <th class="type">Type</th>
-        <th class="comments">Comments</th>
-        <th class="likes">Likes</th>
-        <th class="created">Created</th>
-        <th class="modified">Modified</th>
-        <th class="actions">Actions</th>
-        <th class="status">Status</th>
+        <tr>
+          <th class="timecode">Timecode</th>
+          <th class="note">Note</th>
+          <th class="type">Type</th>
+          <th class="comments">Comments</th>
+          <th class="likes">Likes</th>
+          <th class="created">Created</th>
+          <th class="modified">Modified</th>
+          <th class="actions">Actions</th>
+          <th class="status">Status</th>
+        </tr>
       </thead>
       <tbody>
-        <?php printRows();?>
+        <?php printRows($videoId);?>
       </tbody>
     </table> <!-- end #log_table -->
   </body>
