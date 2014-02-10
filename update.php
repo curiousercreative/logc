@@ -75,7 +75,7 @@
         // execute the query
             if (mysql_query('INSERT INTO `'.$table.'` (`'.implode('`,`', $keys).'`) VALUES (\''.implode('\',\'', $values).'\')')) {
                 $id = mysql_insert_id();
-                $responseFields = array('oldId'=>$fields['created'], 'id'=>$id, 'type'=>$create['type']);
+                $responseFields = array('oldId'=>$create['id'], 'id'=>$id, 'type'=>$create['type']);
                 switch($create['type']) {
                     case 'like':
                     case 'comment':

@@ -494,12 +494,13 @@ $(document).ready(function () {
           response = JSON.parse(response);
           if (response.error) alert(response.msg);
           else {
-            var query;
+            var obj;
             for (var x in response.queries) {
               if (response.queries[x].success) {
               // get the correct obj and fire callback
-                query = !response.queries[x].rowId ? log.getObj(response.queries[x].type, response.queries[x].oldId) : log.getObj(response.queries[x].type, response.queries[x].oldId, response.queries[x].rowId, response.queries[x].rowType);
-                log.dbCallback(query, response.queries[x].id);
+                obj = !response.queries[x].rowId ? log.getObj(response.queries[x].type, response.queries[x].oldId) : log.getObj(response.queries[x].type, response.queries[x].oldId, response.queries[x].rowId, response.queries[x].rowType);
+                if (obj) log.dbCallback(obj, response.queries[x].id);
+                else console.log('could not find obj with id:'+response.queries[x].oldId);
               }
               else alert('external db was not able to save this row');
             }
@@ -533,6 +534,11 @@ $(document).ready(function () {
     // Update the ID
       obj.jObj.attr('id', obj.type+id);
       obj.id = id;
+      
+    // Set the status
+      $('.status', obj.jObj).text('Remote');
+      
+      return true;
     }
     
   // Helper methods
