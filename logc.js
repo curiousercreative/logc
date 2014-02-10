@@ -605,7 +605,7 @@ $(document).ready(function () {
     }
     
     this.faster = function () {
-      this.setPlaybackRate(video.playbackRate + 0.1);
+      this.setPlaybackRate((video.playbackRate*10 + 1)/10);
     }
     
     this.slower = function () {
@@ -627,49 +627,60 @@ $(document).ready(function () {
   bindKeys = function () {
     $(window).keydown(function (e) {
       if (keys.indexOf(e.which) != -1) {        
-      // hotkeys that are only accessible when field isn't being edited or when hotkey combo is used
-        if ( !editingField || (e.metaKey && e.shiftKey) ) {
-          e.preventDefault();
-          switch (e.which) {
-            case 65: //a
-              new log.Row('log');
-              break;
-            case 84: //t
-              new log.Row('transcription');
-              break;
-            case 68: //d
-              //new comment();
-              break;
-            case 74: //j
-              player.slower();
-              break;
-            case 75: //k
-              player.pp();
-              break;
-            case 32: //space
-              player.pp();
-              break;
-            case 76: //l
-              player.faster();
-              break;
-            case 37: //<-
-              player.rr();
-              break;
-            case 39: //->
-              player.ff();
-              break;
-          }  
-        }
-        
       // Special hotkey combos that are always accessible
         if (e.shiftKey && e.metaKey) {
           switch (e.which) {
             case 83: //s save to remote db
               e.preventDefault();
               log.saveDB();
-              break;
+              return;
           }
         }
+      
+      // hotkeys that are only accessible when field isn't being edited or when hotkey combo is used
+        if ( !editingField || (e.metaKey && e.shiftKey) ) {
+          switch (e.which) {
+            case 65: //a
+              new log.Row('log');
+              e.preventDefault();
+              return;
+            case 84: //t
+              new log.Row('transcription');
+              e.preventDefault();
+              return;
+            //case 68: //d
+              //new comment();
+              //e.preventDefault();
+              //return;
+            case 74: //j
+              player.slower();
+              e.preventDefault();
+              return;
+            case 75: //k
+              player.pp();
+              e.preventDefault();
+              return;
+            case 32: //space
+              player.pp();
+              e.preventDefault();
+              return;
+            case 76: //l
+              player.faster();
+              e.preventDefault();
+              return;
+            case 37: //<-
+              if (e.shiftKey) player.rr(30);
+              else player.rr();
+              e.preventDefault();
+              return;
+            case 39: //->
+              if (e.shiftKey) player.ff(30);
+              else player.ff();
+              e.preventDefault();
+              return;
+          }  
+        }
+      // Hotkey combos always available
         else if (e.shiftKey) {
           switch (e.which) {
             case 37: //<- rewind 30 seconds
@@ -679,7 +690,7 @@ $(document).ready(function () {
               player.ff(30);
               break;
           }
-        }
+        }        
       }
     }); 
   }
