@@ -117,8 +117,10 @@
             <dd>skip ahead 5 seconds (hold shift for 30)</dd>
           <dt>a</dt>
             <dd>add log note</dd>
-          <dt>s</dt>
+          <dt>t</dt>
             <dd>add transcription</dd>
+          <dt>s</dt>
+            <dd>save local changes to remote database (hold command/ctrl + shift)</dd>
         </dl>
       </div> <!-- end #legend -->
     </div> <!-- end .col_container -->
