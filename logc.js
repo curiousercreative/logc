@@ -25,49 +25,49 @@ $(document).ready(function () {
       this.comments = new Array(); // An array of all comments
     
     // Classes
-      this.Like = function (parentRow, id, inLocalStorage, inDB) {
+      this.Like = function (row, id, inLocalStorage, inDB) {
       // Props
         this.id = id ? id : new Date().getTime();
-        this.parentRow = parentRow;
+        this.jObj = $('.like', row.jObj);
+        this.row = row;
+        this.type = 'like';
         this.inLocalStorage = inLocalStorage ? true : false;
         this.inDB = inDB ? true : false;
       
       // Methods
         this.prepFields = function () {
           return {
-            'rowId': this.parentRow.id
+            'rowId': this.row.id,
+            'created': Math.round(new Date().getTime()/1000)
           }
         }
         this.destroy = function () {
         // Do I need to be removed from the DB?
-          if (this.inDB) {
-            log.addToLocal('remove', this);
-          }
-          else if (this.inLocalStorage) {
-            log.removeFromLocal(this.id, true, ['create']);
-          }
+          if (this.inDB) log.addToLocal('remove', log.prepLogObj(this.type, this.id));
+          else log.removeFromLocal(this.id, this.type, true, ['create']);
         
         // Update like count
-          $('.likes', this.parentRow.jObj).html(parseInt($('.likes', this.parentRow.jObj).text()) - 1);
+          $('.likes', this.row.jObj).html(parseInt($('.likes', this.row.jObj).text()) - 1);
           
         // Update button text
-          $('button.like', this.parentRow.jObj).removeClass('liked').text('Like');
+          $('button.like', this.row.jObj).removeClass('liked').text('Like');
         
         // delete yourself
-          delete this.parentRow.like;
+          delete this.row.like;
         }
       
-    //== Constructor do
-        // Update like count
-          $('.likes', this.parentRow.jObj).html(parseInt($('.likes', this.parentRow.jObj).text()) + 1);
-          
-        // Update button text
-          $('button.like', this.parentRow.jObj).addClass('liked').text('Unlike');
-        
+    //== Constructor do        
       // Save to array for updating DB
+      // update markup
         if (!this.inDB) {
           log.addToLocal('create', log.prepLogObj('like', this.id, this.prepFields()), this.inLocalStorage);
           this.inLocalStorage = true;
+          
+        // Update like count
+          $('.likes', this.row.jObj).html(parseInt($('.likes', this.row.jObj).text()) + 1);
+          
+        // Update button text
+          $('button.like', this.row.jObj).attr('id', 'like'+this.id).addClass('liked').text('Liked');
         }
       }
       
@@ -76,6 +76,7 @@ $(document).ready(function () {
         this.id = id ? id : new Date().getTime();
         this.parentRow = parentRow;
         this.inLocalStorage = inLocalStorage ? true : false;
+        this.type = 'comment';
         this.inDB = inDB ? true : false;
         this.jObj = $('#comment'+id, parentRow.jObj);
       
@@ -92,7 +93,7 @@ $(document).ready(function () {
             log.addToLocal('remove', this);
           }
           else if (this.inLocalStorage) {
-            log.removeFromLocal(this.id, true, ['create']);
+            log.removeFromLocal(this.id, this.type, true, ['create']);
           }
           else {
             log.removeFromLocal(this.id, ['update']);
@@ -217,7 +218,7 @@ $(document).ready(function () {
       // Remove this row
         // Add the query to localStorage
         if (this.inDB) log.addToLocal('remove', log.prepLogObj(this.type, this.id), false);
-        else log.removeFromLocal(this.id, true);
+        else log.removeFromLocal(this.id, this.type, true);
         
       // Remove the markup
         this.jObj.remove();
@@ -437,16 +438,13 @@ $(document).ready(function () {
   // == Contructor do
       // Loaded from the DB, exists in markup already
       if (this.inDB) {
+      // set jObj
         this.jObj = $('#'+this.type + this.id);
       
-      // Add focus & blur listener for the note
+      // Add listeners
         this.addFocusBlurListener();
-      
-      // Listeners for row buttons    
         this.addButtonListeners();
-        
         this.addTimecodeListener();
-        
         this.addTypeListener();
       }
       // Loaded from localStorage
@@ -548,7 +546,11 @@ $(document).ready(function () {
     this.loadFromRemote = function () {
     // Load all of the rows
       $('#log_table tbody tr').each(function () {
-        new log.Row($('.type', this).text(), parseInt($(this).attr('id').replace(/[^\d]+/g, '')), null, false, true);
+      // Create row object
+        var row = new log.Row($('.type', this).text(), parseInt($(this).attr('id').replace(/[^\d]+/g, '')), null, false, true);
+        
+      // Check for a like
+        if ($('.like', row.jObj).hasClass('liked')) row.like = new row.Like(row, $('.like', row.jObj).attr('id').replace(/[^\d]+/g, ''), false, true);
       });
     }
     // addToLocal to tempStorage and localStorage
@@ -569,13 +571,16 @@ $(document).ready(function () {
     // Update localStorage
       if (!inLocalStorage) this.updateLocalStorage([action]);
     }
-  // Remove query for temp storage
-    this.removeFromLocal = function (id, updateLocal, actions) {      
+  // Remove query from temp & local storage
+    this.removeFromLocal = function (id, type, updateLocal, actions) {      
       if (!actions) var actions = window.actions;
       
       for (var x in actions) {
         for (var y in this.tempStorage[actions[x]]) {
-          if (this.tempStorage[actions[x]][y].id == id) {
+          if (
+            this.tempStorage[actions[x]][y].id == id
+            && this.tempStorage[actions[x]][y].type == type
+          ) {
             this.tempStorage[actions[x]].splice(y, 1);
             if (updateLocal) this.updateLocalStorage([actions[x]]);
             return true;
@@ -615,12 +620,12 @@ $(document).ready(function () {
               if (response.queries[x].success) {
                 switch (response.queries[x].action) {
                     case 'remove':
-                      log.dbDeleteCallback();
+                      log.dbDeleteCallback(response.queries[x].oldId, response.queries[x].type);
                       break;
                     case 'update':
                     case 'create':
                     // get the correct obj and fire callback
-                      obj = !response.queries[x].rowId ? log.getObj(response.queries[x].type, response.queries[x].oldId) : log.getObj(response.queries[x].type, response.queries[x].oldId, response.queries[x].rowId, response.queries[x].rowType);
+                      obj = !response.queries[x].rowId ? log.getObj(response.queries[x].type, response.queries[x].oldId) : log.getObj(response.queries[x].type, response.queries[x].oldId, response.queries[x].rowId);
                       if (obj) log.dbCreateCallback(obj, response.queries[x].id);
                       else console.log('could not find obj with id:'+response.queries[x].oldId);
                       break;
@@ -653,19 +658,19 @@ $(document).ready(function () {
       obj.inDB = true;
       
     // remove from local
-      if (log.removeFromLocal(obj.id)) obj.inLocalStorage = false;
+      if (log.removeFromLocal(obj.id, obj.type, false, ['create', 'update'])) obj.inLocalStorage = false;
       
-    // Update the ID
-      obj.jObj.attr('id', obj.type+id);
-      obj.id = id;
-      
-    // Set the status
-      $('.status', obj.jObj).text('Remote');
+      // Update the ID
+        obj.jObj.attr('id', obj.type+id);
+        obj.id = id;
+        
+      // Set the status
+        $('.status', obj.jObj).text('Remote');
       
       return true;
     }
-    this.dbDeleteCallback = function () {      
-    
+    this.dbDeleteCallback = function (oldId, type) {      
+      this.removeFromLocal(oldId, type, false, ['remove']);
     }
     
   // Helper methods
@@ -730,9 +735,7 @@ $(document).ready(function () {
     // for like and comments
       if (rowId) {
         var row = this.getRowById(rowId);
-        for (var x in row[type+'s']) {
-          if (row[type+'s'][x].id == id) return row[type+'s'][x];
-        }
+        return row[type];
       }
     // for transcriptions and logs
       else {

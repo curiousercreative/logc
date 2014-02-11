@@ -88,14 +88,13 @@
             $query = 'INSERT INTO `'.$table.'` (`'.implode('`,`', $keys).'`) VALUES (\''.implode('\',\'', $values).'\')';
         
         // execute the query
-            if (mysql_query('INSERT INTO `'.$table.'` (`'.implode('`,`', $keys).'`) VALUES (\''.implode('\',\'', $values).'\')')) {
+            if (mysql_query($query)) {
                 $id = mysql_insert_id();
                 $responseFields = array('oldId'=>$create['id'], 'id'=>$id, 'type'=>$create['type'], 'action'=>'create');
                 switch($create['type']) {
                     case 'like':
                     case 'comment':
                         $responseFields['rowId'] = $fields['rowId'];
-                        $responseFields['rowType'] = $fields['rowType'];
                 }
                     
                 array_push($results, new ResponseQuery($responseFields));
@@ -117,7 +116,7 @@
         
         // execute the query
             if (mysql_query($query)) {
-                $responseFields = array('oldId'=>$remove['id'], 'type'=>$remove['type'], 'action'=>'delete');
+                $responseFields = array('oldId'=>$remove['id'], 'type'=>$remove['type'], 'action'=>'remove');
                 switch($remove['type']) {
                     case 'like':
                     case 'comment':

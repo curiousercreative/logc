@@ -3,6 +3,9 @@
   connect();
   mysql_select_db('logc');
   
+  //$userId = $_SESSION['userId'];
+  $userId = 0;
+  
   if (isset($_REQUEST['videoId']) && !empty($_REQUEST['videoId'])) {
     $videoId = $_REQUEST['videoId'];  
   }
@@ -37,14 +40,22 @@
     return $hours.":".$minutes.":".$seconds.":".$frames;
   }
   
-  function printRows($videoId) {
+  function printRows($videoId, $userId) {
     $query = mysql_query('SELECT * FROM rows WHERE videoId='.mysql_real_escape_string($videoId).' ORDER BY timecode');
     while ($log = mysql_fetch_object($query)) {
       $commentQuery = mysql_query('SELECT parentId FROM comments WHERE parentId='.$log->id);
       $commentCount = mysql_num_rows($commentQuery);
       
-      $likeQuery = mysql_query('SELECT rowId FROM likes WHERE rowId='.$log->id);
+      $likeQuery = mysql_query('SELECT * FROM likes WHERE rowId='.$log->id);
       $likeCount = mysql_num_rows($likeQuery);
+      $likeButton = '<button class="like">Like</button>';
+      while ($like = mysql_fetch_object($likeQuery)) {
+        if ($like->userId == $userId) {
+          $likeButton = '<button class="like liked" id="like'.$like->id.'">Liked</button>';
+          break;
+        }
+      }
+
       echo '<tr id="'.$log->type.$log->id.'" class="'.$log->type.'">
       <td class="timecode" data-value="'.$log->timecode.'">'.formatTimecode($log->timecode).'</td>
       <td class="note" contenteditable="true">'.$log->note.'</td>
@@ -53,7 +64,7 @@
       <td class="likes">'.$likeCount.'</td>
       <td class="created">'.$log->created.'</td>
       <td class="modified">'.$log->modified.'</td>
-      <td class="actions"><button class="like">Like</button><button class="delete">delete</button><!-- <button class="comment">Comment</button> --></td>
+      <td class="actions">'.$likeButton.'<button class="delete">delete</button><!-- <button class="comment">Comment</button> --></td>
       <td class="status">Remote</td>
     </tr>';
     }
@@ -127,7 +138,7 @@
         </tr>
       </thead>
       <tbody>
-        <?php printRows($videoId);?>
+        <?php printRows($videoId, $userId);?>
       </tbody>
     </table> <!-- end #log_table -->
   </body>
