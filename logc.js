@@ -224,7 +224,7 @@ $(document).ready(function () {
         this.jObj.remove();
         
       // Remove associated like (from local really)
-        this.like.destroy();
+        if (this.like) this.like.destroy();
         
       // Remove reference to this object
         for (var x in log.rows) {
