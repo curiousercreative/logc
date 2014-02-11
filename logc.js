@@ -303,8 +303,15 @@ $(document).ready(function () {
       
       // Let the timecode be edited if it is double-clicked on
         $('.timecode', this.jObj).dblclick(function () {
-          $(this).attr('contenteditable', 'true').focus();
+        // flag for editing field
           editingField = true;
+          
+        // Make the field editable, store the current value
+          $(this).attr({
+            'contenteditable': 'true',
+            'data-old-html': $(this).html()
+        // Focus
+          }).focus();
         });
         
       // If enter is hit, blur
@@ -326,17 +333,21 @@ $(document).ready(function () {
         // disable contenteditable
           $(this).removeAttr('contenteditable');
           
-        // decode the timecode and compare
-          var sec = log.decodeTimecode($(this).html());
-          
-        // timecode was improperly formatted, discard changes
-          if (!sec) $(this).html(log.formatTimecode($(this).attr('data-value')));
-          else {
-          // Copy the seconds to data-value and fire onUpdate
-            $(this).attr('data-value', sec);
+        // Check to see if the html changed
+          if ($(this).html() !== $(this).attr('data-old-html')) {
+          // decode the timecode and compare
+            var sec = log.decodeTimecode($(this).html());
             
-            log.getRowById($(this).closest('tr').attr('id')).onUpdate();
+          // timecode was improperly formatted, discard changes
+            if (!sec) $(this).html(log.formatTimecode($(this).attr('data-value')));
+            else {
+            // Copy the seconds to data-value and fire onUpdate
+              $(this).attr('data-value', sec);
+              
+              log.getRowById($(this).closest('tr').attr('id')).onUpdate();
+            }
           }
+  
           editingField = false;
         });
       }
