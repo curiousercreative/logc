@@ -323,7 +323,7 @@ $(document).ready(function () {
               break;
             case 27:
               e.preventDefault();
-              $(this).html(log.formatTimecode($(this).attr('data-value'))).blur();
+              $(this).html($(this).attr('data-old-html')).blur();
               break;
           }
         });
