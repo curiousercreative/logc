@@ -37,8 +37,8 @@ $(document).ready(function () {
       // Methods
         this.prepFields = function () {
           return {
-            'rowId': this.row.id,
-            'created': Math.round(new Date().getTime()/1000)
+            rowId: this.row.id,
+            created: Math.round(new Date().getTime()/1000)
           }
         }
         this.destroy = function () {
@@ -60,7 +60,7 @@ $(document).ready(function () {
       // Save to array for updating DB
       // update markup
         if (!this.inDB) {
-          log.addToLocal('create', log.prepLogObj('like', this.id, this.prepFields()), this.inLocalStorage);
+          log.addToLocal('create', log.prepLogObj(this.type, this.id, this.prepFields()), this.inLocalStorage);
           this.inLocalStorage = true;
           
         // Update like count
@@ -222,6 +222,9 @@ $(document).ready(function () {
         
       // Remove the markup
         this.jObj.remove();
+        
+      // Remove associated like (from local really)
+        this.like.destroy();
         
       // Remove reference to this object
         for (var x in log.rows) {
