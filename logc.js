@@ -168,36 +168,27 @@ $(document).ready(function () {
         // this is a table within a table for commenting purposes
         //var row = $('<tr><td colspan="9"><table><tbody><tr><td class="timecode"></td><td class="note" contenteditable="true"></td><td class="type"></td><td class="comments">0</td><td class="likes">0</td><td class="created"></td><td class="modified"></td><td class="actions"><button class="like">Like</button><button class="comment">Comment</button></td><td class="status">Local</td></tr></tbody></table></td></tr>');
         
-        var row = $('<tr><td class="timecode"></td><td class="note" contenteditable="true"></td><td class="type"></td><td class="comments">0</td><td class="likes">0</td><td class="created"></td><td class="modified"></td><td class="actions"><button class="like">Like</button><button class="delete">delete</button><!-- <button class="comment">Comment</button> --></td><td class="status">Local</td></tr>');
+        this.jObj = $('<tr><td class="timecode"></td><td class="note" contenteditable="true"></td><td class="type"></td><td class="comments">0</td><td class="likes">0</td><td class="created"></td><td class="modified"></td><td class="actions"><button class="like">Like</button><button class="delete">delete</button><!-- <button class="comment">Comment</button> --></td><td class="status">Local</td></tr>');
         
       // Add class && id to the row
-        $(row).attr('id', this.type+this.id).addClass(this.type).find('.type').html(this.type);
+        $(this.jObj).attr('id', this.type+this.id).addClass(this.type).find('.type').html(this.type);
         
       // Add a timecode
-        $('.timecode', row).attr('data-value', fields.timecode).html(log.formatTimecode(fields.timecode));    
+        $('.timecode', this.jObj).attr('data-value', fields.timecode).html(log.formatTimecode(fields.timecode));    
     
       // Add timestamps
-        $('.created', row).html(fields.created);      
-        $('.modified', row).html(fields.modified);
+        $('.created', this.jObj).html(fields.created);      
+        $('.modified', this.jObj).html(fields.modified);
         
       // Add to the log_table
-        $('#log_table tbody').prepend(row);
-        
-      // Add focus & blur listener for the note
-        this.addFocusBlurListener();
-      
-      // Listeners for all row buttons
-        this.addButtonListeners();
-        
-        this.addTimecodeListener();
-        
-        this.addTypeListener();
+        $('#log_table tbody').prepend(this.jObj);
+
+      // Add listeners
+        this.addListeners();
         
       // Set focus to the note
-        if (fields.note) $('.note', row).text(fields.note);
-        else if (!this.inLocalStorage) $('.note', row).focus();
-        
-        return $(row);
+        if (fields.note) $('.note', this.jObj).text(fields.note);
+        else if (!this.inLocalStorage) $('.note', this.jObj).focus();
       }
       
       // Update a row from localStorage data
@@ -234,6 +225,16 @@ $(document).ready(function () {
       }
       
     // Listeners
+      this.addListeners = function () {
+        this.addFocusBlurListener();
+        this.addLikeListeners();
+        this.addDeleteListeners();
+        this.addCommentListeners();
+        this.addDeleteListeners();
+        this.addTimecodeListener();
+        this.addTypeListener();
+      }
+      
       this.addFocusBlurListener = function () {
         $('.note', this.jObj).on('focus', function () {
           editingField = true;
@@ -287,12 +288,6 @@ $(document).ready(function () {
       
       this.addCommentListeners = function () {
         
-      }
-      
-      this.addButtonListeners = function () {
-        this.addLikeListeners();
-        this.addDeleteListeners();
-        this.addCommentListeners;
       }
       
       this.addTimecodeListener = function () {
@@ -456,15 +451,12 @@ $(document).ready(function () {
         this.jObj = $('#'+this.type + this.id);
       
       // Add listeners
-        this.addFocusBlurListener();
-        this.addButtonListeners();
-        this.addTimecodeListener();
-        this.addTypeListener();
+        this.addListeners();
       }
       // Loaded from localStorage
-      else if (this.inLocalStorage) this.jObj = this.createTableRow(fields);
+      else if (this.inLocalStorage) this.createTableRow(fields);
       // Creating for the first time per user request
-      else this.jObj = this.createTableRow();
+      else this.createTableRow();
       
     // Save to our array of all of this type
       log.rows.push(this);
