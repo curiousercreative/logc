@@ -273,7 +273,8 @@ p:last-child {
 
 #log_table .actions {
 	width: 5%;
-	min-width: 115px;
+	min-width: 125px;
+	white-space: nowrap;
 }
 
 #log_table .status {
