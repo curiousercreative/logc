@@ -87,8 +87,8 @@
                     // Assuming the most recent query was the parent row, let's start with it
                         foreach(array_reverse($results) AS $result) {
                         // Find the row with the matching old id
-                            if ($result['oldId'] == $fields['rowId']) {
-                                $fields['rowId'] = $results['id'];
+                            if ($result->oldId == $fields['rowId']) {
+                                $fields['rowId'] = $result->id;
                                 break;
                             }
                         }
@@ -132,6 +132,12 @@
             if (mysql_query($query)) {
                 $responseFields = array('oldId'=>$remove['id'], 'type'=>$remove['type'], 'action'=>'remove');
                 switch($remove['type']) {
+                    case 'log':
+                    case 'transcription':
+                    // Remove associated likes and comments
+                        mysql_query('DELETE FROM `likes` WHERE rowId='.$remove['id']);
+                        mysql_query('DELETE FROM `comments` WHERE rowId='.$remove['id']);
+                        break;
                     case 'like':
                     case 'comment':
                         $responseFields['rowId'] = $fields['rowId'];
