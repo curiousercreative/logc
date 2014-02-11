@@ -81,6 +81,18 @@
                 case 'comment':
                     $fields['userId'] = $create['userId'];
                     $table = $create['type'].'s';
+                // What if the parent row is part of this set of updates? We don't want to store the temporary, old id for this like/comment
+                    // If there were no previous query results, we have nothing to check
+                    if (!empty($results)) {
+                    // Assuming the most recent query was the parent row, let's start with it
+                        foreach(array_reverse($results) AS $result) {
+                        // Find the row with the matching old id
+                            if ($result['oldId'] == $fields['rowId']) {
+                                $fields['rowId'] = $results['id'];
+                                break;
+                            }
+                        }
+                    }
             }
             $fields['videoId'] = $create['videoId'];
         
