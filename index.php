@@ -43,7 +43,7 @@
   function printRows($videoId, $userId) {
     $query = mysql_query('SELECT * FROM rows WHERE videoId='.mysql_real_escape_string($videoId).' ORDER BY timecode');
     while ($log = mysql_fetch_object($query)) {
-      $commentQuery = mysql_query('SELECT parentId FROM comments WHERE parentId='.$log->id);
+      $commentQuery = mysql_query('SELECT * FROM comments WHERE rowId='.$log->id);
       $commentCount = mysql_num_rows($commentQuery);
       
       $likeQuery = mysql_query('SELECT * FROM likes WHERE rowId='.$log->id);
