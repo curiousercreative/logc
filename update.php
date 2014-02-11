@@ -35,6 +35,7 @@
                 case 'transcription':
                     $fields['type'] = $update['type'];
                     $fields['modifiedLastBy'] = $update['userId'];
+                    $fields['note'] = stripslashes($fields['note']);
                     $table = 'rows';
                     break;
             }
@@ -73,6 +74,7 @@
                     $fields['modifiedLastBy'] = $create['userId'];
                     $fields['createdBy'] = $create['userId'];
                     $fields['type'] = $create['type'];
+                    $fields['note'] = stripslashes($fields['note']);
                     $table = 'rows';
                     break;
                 case 'like':
