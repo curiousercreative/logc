@@ -280,8 +280,15 @@ $(document).ready(function () {
         $('button.delete', this.jObj).on('click', function (e) {
         // what's my parent's obj?
           var parentRow = log.getRowById($(this).closest('tr').attr('id'));
-          
-          parentRow.destroy();
+            
+          if (
+          // If it's not in the DB and the note is blank, who cares  
+            (!parentRow.inDB && $('.note', parentRow.jObj).html() == '')
+          // Otherwise, make them confirm
+            || confirm('Are you sure you want to delete this row? This is irreversible and any likes and comments associated with it will be deleted as well. Proceed?')
+          ) {
+            parentRow.destroy();
+          }
         });
       }
       
