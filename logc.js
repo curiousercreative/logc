@@ -230,7 +230,6 @@ $(document).ready(function () {
         this.addLikeListeners();
         this.addDeleteListeners();
         this.addCommentListeners();
-        this.addDeleteListeners();
         this.addTimecodeListener();
         this.addTypeListener();
       }
@@ -280,7 +279,7 @@ $(document).ready(function () {
       // Click
         $('button.delete', this.jObj).on('click', function (e) {
         // what's my parent's obj?
-          var parentRow = log.getRowById($(this).parents('tr').attr('id'));
+          var parentRow = log.getRowById($(this).closest('tr').attr('id'));
           
           parentRow.destroy();
         });
@@ -599,6 +598,8 @@ $(document).ready(function () {
     
     // Saves localStorage to server DB
     this.saveDB = function () {
+      if (userId === '0') return;
+      
       var isEmpty = true;
       for (var x in this.tempStorage) {
         if (!$.isEmptyObject(this.tempStorage[x])) {
@@ -886,7 +887,15 @@ $(document).ready(function () {
   
   player = new Player();
   
-  bindKeys();
+// Only bind keys if not a guest
+  if (userId !== '0') bindKeys();
+  
+// If guest, clear the localStorage
+  if (userId == '0') {
+    delete localStorage.remove;
+    delete localStorage.create;
+    delete localStorage.update;
+  }
   
   $('.footable').footable();
 });

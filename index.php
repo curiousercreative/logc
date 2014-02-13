@@ -1,22 +1,71 @@
 <?php
+  session_start();
+  
   include_once('update.php');
   connect();
   mysql_select_db('logc');
   
-  //$userId = $_SESSION['userId'];
-  $userId = 0;
-  
-  if (isset($_REQUEST['videoId']) && !empty($_REQUEST['videoId'])) {
-    $videoId = $_REQUEST['videoId'];  
+// Decide what to show
+// Logging in/creating an account request
+  if (isset($_REQUEST['handle']) && !empty($_REQUEST['handle'])) {
+    $handle = mysql_real_escape_string($_REQUEST['handle']);
+    
+  // See if the handle already exists
+    $query = mysql_query('SELECT * FROM users WHERE handle="'.$handle.'"');
+    if (mysql_numrows($query) > 0) {
+      $user = mysql_fetch_object($query);
+      $userId = $user->id;
+      $_SESSION['userId'] = $userId;
+      $_SESSION['superuser'] = $user->superuser == 1 ? true : false;
+    }
+  // Doesn't exist, create a new one
+    else {
+      $query = mysql_query('INSERT INTO users SET handle="'.$handle.'"');
+      if ($query) {
+        $userId = mysql_insert_id();
+        $_SESSION['userId'] = $userId;
+        $_SESSION['superuser'] = false;
+      }
+      else {
+        echo 'Could not create new user: '.mysql_error();
+        exit;
+      }
+    }
+    
+    header('Location: /'.$_REQUEST['videoId']);
+    exit;
   }
-  else {
-    include_once('update.php');
+// Index of all videos
+  else if (!isset($_REQUEST['videoId']) || empty($_REQUEST['videoId'])) {
     $query = mysql_query('SELECT * FROM videos ORDER BY id');
     while ($video = mysql_fetch_object($query)) {
       print '<p><a href="/'.$video->id.'">'.$video->title.'</a></p>';
     }
     exit;
+  }  
+// Video page
+  else if (isset($_SESSION['userId'])) {
+    $userId = $_SESSION['userId'];
+    $videoId = $_REQUEST['videoId'];  
   }
+// Log in page
+  else {
+    echo '<h1>Please enter a handle or email address for us to identify your work by</h1>
+    <form action="/">
+    <input name="handle" type="text" />
+    <input type="hidden" name="videoId" value="'.$_REQUEST['videoId'].'" />
+    <input type="submit" value="submit" />
+    </form>
+    <br />
+    <h1>Or you may enter as a guest and view only</h1>
+    <form action="/">
+      <input name="handle" value="guest" type="hidden" />
+      <input type="hidden" name="videoId" value="'.$_REQUEST['videoId'].'" />
+      <input type="submit" value="enter as guest" />
+    ';
+    exit;
+  }
+  
   function formatTimecode($secs) {
   // hours
     $hours = intval($secs/3600);
@@ -84,7 +133,7 @@
     <link href="footable/footable.css" rel="stylesheet" />
     <link href="logc.css" rel="stylesheet" />
     <script>
-      userId = '0';
+      userId = '<?php print $userId; ?>';
       videoId = '<?php print $videoId; ?>';
     </script>
   </head>

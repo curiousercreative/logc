@@ -122,6 +122,9 @@
     function remove($removes) {     
         $results = array();
     
+    // Check for permissions
+        if (!isset($_SESSION['superuser']) || empty($_SESSION['superuser']) || $_SESSION['superuser'] != true) return array('you do not have permission to make deletes');
+    
     // iterate through queries, adding each to our response
         foreach ($removes AS $remove) {
         // Build our query
@@ -176,6 +179,14 @@
         }
         
         
+    // make sure a guest isn't trying to make updates.
+        if (session_status() == PHP_SESSION_NONE) session_start();
+        if (!isset($_SESSION['userId']) || empty($_SESSION['userId']) || $_SESSION['userId'] == 0) {
+            echo 'only users with handles can update DB';
+            exit;
+        }
+        
+    // Process update requests
         if (isset($_REQUEST['create']) && !empty($_REQUEST['create'])) $response->queries = array_merge($response->queries, create($_REQUEST['create']));
         if (isset($_REQUEST['update']) && !empty($_REQUEST['update'])) $response->queries = array_merge($response->queries, update($_REQUEST['update']));
         if (isset($_REQUEST['remove']) && !empty($_REQUEST['remove'])) $response->queries = array_merge($response->queries, remove($_REQUEST['remove']));
