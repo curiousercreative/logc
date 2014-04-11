@@ -180,7 +180,7 @@
         
         
     // make sure a guest isn't trying to make updates.
-        if (session_status() == PHP_SESSION_NONE) session_start();
+        if (!function_exists(session_status) || session_status() == PHP_SESSION_NONE) session_start();
         if (!isset($_SESSION['userId']) || empty($_SESSION['userId']) || $_SESSION['userId'] == 0) {
             echo 'only users with handles can update DB';
             exit;
