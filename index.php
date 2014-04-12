@@ -120,7 +120,7 @@
   }
   function printVideoSrc($videoId) {
     $query = mysql_query('SELECT src FROM videos WHERE id='.mysql_real_escape_string($videoId));
-    print mysql_fetch_object($query)->src;
+    print str_replace('.mp4', '', mysql_fetch_object($query)->src);
   }
 ?>
 <html>
@@ -141,7 +141,8 @@
     <div class="col_container">
       <div class="half col" id="video_container">
         <video id="video" controls>
-          <source src="<?php printVideoSrc($videoId); ?>" type="video/mp4">
+          <source src="<?php printVideoSrc($videoId); ?>.mp4" type="video/mp4" />
+          <source src="<?php printVideoSrc($videoId); ?>.ogg" type="video/ogg" />
         </video>
         <div id="playback_rate" contenteditable="true" tabIndex="-1">1.0</div>
       </div> <!-- end #video_container -->
