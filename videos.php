@@ -17,12 +17,12 @@
         <?php
             $query = mysql_query('SELECT * FROM stories ORDER BY ordering');
             while ($story = mysql_fetch_object($query)) {
-              echo fmod($story->id, 100000000);
-              if (fmod($story->id, 100000000) != 0) {
+              echo fmod($story->ordering, 100000000);
+              if ($story->ordering % 100000000 != 0) {
                 print '<span>'.$story->title.'</span>'; 
               }
               else {
-                $i = $story->id/100000000;
+                $i = $story->ordering/100000000;
                 print '<h1>'.$i.'. '.$story->title.'</h1><p>'.$story->story_text.'</p>';
               }
             }
