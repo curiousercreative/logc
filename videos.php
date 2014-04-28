@@ -2,7 +2,7 @@
     <head><title>LogC - Community video logging</title></head>
     <body>
     <?php
-        $query = mysql_query('SELECT * FROM stories ORDER BY order');
+        $query = mysql_query('SELECT * FROM stories ORDER BY ordering');
         while ($story = mysql_fetch_object($query)) {
           print '<h1>'.$story->title.'</h1><p>'.$story->story_text.'</p>';
         }
