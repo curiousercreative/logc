@@ -22,7 +22,8 @@
               }
               else {
                 $i = $story->id/100000000;
-                print '<h1>'.$i.'. '.$story->title.'</h1><p>'.$story->story_text.'</p>'; 
+                print '<h1>'.$i.'. '.$story->title.'</h1><p>'.$story->story_text.'</p>';
+              }
             }
             
             $query = mysql_query('SELECT * FROM videos ORDER BY id');
