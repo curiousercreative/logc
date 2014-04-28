@@ -17,8 +17,8 @@
         <?php
             $query = mysql_query('SELECT * FROM stories ORDER BY ordering');
             while ($story = mysql_fetch_object($query)) {
-              if ($story->ordering % 100000000 != 0) {
-                print '<span>'.$story->title.'</span>'; 
+              if ($story->ordering === 0 || $story->ordering % 100000000 != 0) {
+                print '<div class="heading">'.$story->title.'</div>'; 
               }
               else {
                 $i = $story->ordering/100000000;
