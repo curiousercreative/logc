@@ -37,7 +37,7 @@
   }
 // Index of all videos
   else if (!isset($_REQUEST['videoId']) || empty($_REQUEST['videoId'])) {
-    include(dirname(__FILE__) . 'videos.php');
+    include(dirname(__FILE__) . '/videos.php');
     exit;
   }  
 // Video page
@@ -47,7 +47,7 @@
   }
 // Log in page
   else {
-    include(dirname(__FILE__) . 'login.php');
+    include(dirname(__FILE__) . '/login.php');
     exit;
   }
   
@@ -108,5 +108,5 @@
     print str_replace('.mp4', '', mysql_fetch_object($query)->src);
   }
 
-  include(dirname(__FILE__) . 'video.php');
+  include(dirname(__FILE__) . '/video.php');
 ?>
