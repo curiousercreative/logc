@@ -10,6 +10,12 @@
             p {
                 margin: 0.25em 0;
             }
+            
+            .heading {
+                font-size: 1.25em;
+                font-weight: bold;
+                margin: 0.75em 0;
+            }
         </style>
     </head>
     <body>
