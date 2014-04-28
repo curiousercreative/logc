@@ -35,6 +35,7 @@
     header('Location: /'.$_REQUEST['videoId']);
     exit;
   }
+// Story 
 // Index of all videos
   else if (!isset($_REQUEST['videoId']) || empty($_REQUEST['videoId'])) {
     include(dirname(__FILE__) . '/videos.php');
