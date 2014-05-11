@@ -45,8 +45,6 @@
   else if (isset($_SESSION['userId'])) {
     $userId = $_SESSION['userId'];
     $videoId = $_REQUEST['videoId'];
-    
-    include(dirname(__FILE__) . '/video.php');
   }
 // Log in page
   else {
