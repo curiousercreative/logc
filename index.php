@@ -3,7 +3,6 @@
   
   include_once('update.php');
   connect();
-  mysql_select_db($preferences->db->name);
   
 // Decide what to show
 // Logging in/creating an account request

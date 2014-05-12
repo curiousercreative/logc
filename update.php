@@ -21,7 +21,8 @@
     
     function connect() {
         include_once('preferences.php');
-        return mysql_connect($preferences->db->host, $preferences->db->user, $preferences->db->pass);
+        mysql_connect($preferences->db->host, $preferences->db->user, $preferences->db->pass);
+        mysql_select_db($preferences->db->name);
     }
     function update($updates) {
          $results = array();
