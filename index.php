@@ -3,7 +3,7 @@
   
   include_once('update.php');
   connect();
-  mysql_select_db('dev_logc');
+  mysql_select_db($preferences->db->name);
   
 // Decide what to show
 // Logging in/creating an account request
