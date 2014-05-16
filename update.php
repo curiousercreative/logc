@@ -21,8 +21,9 @@
     
     function connect() {
         include_once('preferences.php');
-        mysql_connect($preferences->db->host, $preferences->db->user, $preferences->db->pass);
-        mysql_select_db($preferences->db->name);
+        $db = new mysqli($preferences->db->host, $preferences->db->user, $preferences->db->pass, $preferences->db->name);
+        echo mysqli_connect_error();
+        return $db;
     }
     function update($updates) {
          $results = array();
@@ -44,14 +45,14 @@
         // Build our query    
             $set = '';
             foreach($fields AS $key => $val) {
-                $set .= " ".mysql_real_escape_string($key)."='".mysql_real_escape_string($val)."',";
+                $set .= " ".$GLOBALS['db']->real_escape_string($key)."='".$GLOBALS['db']->real_escape_string($val)."',";
             }
             $set = trim($set, ',');
             
             $query = 'UPDATE `'.$table.'` SET'.$set.' WHERE id='.$update['id'].' LIMIT 1';
             
         // execute the query
-            if (mysql_query($query)) {
+            if ($GLOBALS['db']->query($query)) {
                 $responseFields = array('id'=>$update['id'], 'oldId'=>$update['id'], 'type'=>$update['type'], 'action'=>'update');
                     
                 array_push($results, new ResponseQuery($responseFields));
@@ -98,13 +99,13 @@
             $fields['videoId'] = $create['videoId'];
         
         // Build our query    
-            $values = array_map('mysql_real_escape_string', array_values($fields));
+            $values = array_map('mysqli::real_escape_string', array_values($fields));
             $keys = array_keys($fields);
             $query = 'INSERT INTO `'.$table.'` (`'.implode('`,`', $keys).'`) VALUES (\''.implode('\',\'', $values).'\')';
         
         // execute the query
-            if (mysql_query($query)) {
-                $id = mysql_insert_id();
+            if ($GLOBALS['db']->query($query)) {
+                $id = $GLOBALS['db']->insert_id();
                 $responseFields = array('oldId'=>$create['id'], 'id'=>$id, 'type'=>$create['type'], 'action'=>'create');
                 switch($create['type']) {
                     case 'like':
@@ -133,14 +134,14 @@
             $query = 'DELETE FROM `'.$table.'` WHERE id='.$remove['id'];
         
         // execute the query
-            if (mysql_query($query)) {
+            if ($GLOBALS['db']->query($query)) {
                 $responseFields = array('oldId'=>$remove['id'], 'type'=>$remove['type'], 'action'=>'remove');
                 switch($remove['type']) {
                     case 'log':
                     case 'transcription':
                     // Remove associated likes and comments
-                        mysql_query('DELETE FROM `likes` WHERE rowId='.$remove['id']);
-                        mysql_query('DELETE FROM `comments` WHERE rowId='.$remove['id']);
+                        $GLOBALS['db']->query('DELETE FROM `likes` WHERE rowId='.$remove['id']);
+                        $GLOBALS['db']->query('DELETE FROM `comments` WHERE rowId='.$remove['id']);
                         break;
                     case 'like':
                     case 'comment':
@@ -165,20 +166,13 @@
         $response = new Response();
         
     // Connect to db
-        if (!connect()) {
+        $GLOBALS['db'] = connect();
+        if (!$GLOBALS['db']) {
             $response->error = true;
             $response->message = 'could not connect to db';
             echo json_encode($response);
             exit;
         }
-    // Select db
-        else if (!mysql_select_db('logc')) {
-            $response->error = true;
-            $response->message = 'could not select db';
-            echo json_encode($response);
-            exit;
-        }
-        
         
     // make sure a guest isn't trying to make updates.
         if (!function_exists(session_status) || session_status() == PHP_SESSION_NONE) session_start();
@@ -201,9 +195,9 @@
         $videos = array_reverse($videos);
         
         connect();
-        mysql_select_db('logc');
+        
         foreach($videos AS $video) {
-            mysql_query('INSERT INTO `videos` (`src`, `title`) VALUES (\''.$video->src.'\', \''.$video->title.'\')');
+            $GLOBALS['db']->query('INSERT INTO `videos` (`src`, `title`) VALUES (\''.$video->src.'\', \''.$video->title.'\')');
         }
     }
     

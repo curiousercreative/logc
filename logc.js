@@ -806,7 +806,7 @@ $(document).ready(function () {
   
 // Functions
   bindKeys = function () {
-    $(window).keydown(function (e) {
+    $(document).keydown(function (e) {
       if (keys.indexOf(e.which) != -1) {        
       // Special hotkey combos that are always accessible
         if (e.shiftKey && e.metaKey || e.ctrlKey) {

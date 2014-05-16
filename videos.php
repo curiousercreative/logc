@@ -21,8 +21,8 @@
     <body>
         <div style="margin: 0px auto; max-width: 600px;">
         <?php
-            $query = mysql_query('SELECT * FROM stories ORDER BY ordering');
-            while ($story = mysql_fetch_object($query)) {
+            $query = $GLOBALS['db']->query('SELECT * FROM stories ORDER BY ordering');
+            while ($story = $query->fetch_object()) {
               if ($story->ordering === 0 || $story->ordering % 100000000 != 0) {
                 print '<div class="heading">'.$story->title.'</div>'; 
               }
@@ -32,8 +32,8 @@
               }
             }
             
-            $query = mysql_query('SELECT * FROM videos ORDER BY id');
-            while ($video = mysql_fetch_object($query)) {
+            $query = $GLOBALS['db']->query('SELECT * FROM videos ORDER BY id');
+            while ($video = $query->fetch_object()) {
               print '<p><a href="/'.$video->id.'">'.$video->id.' - '.$video->title.'</a></p>';
             }
         ?>

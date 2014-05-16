@@ -2,31 +2,32 @@
   session_start();
   
   include_once('update.php');
-  connect();
+  $GLOBALS['db'] = connect();
+  $db = &$GLOBALS['db'];
   
 // Decide what to show
 // Logging in/creating an account request
   if (isset($_REQUEST['handle']) && !empty($_REQUEST['handle'])) {
-    $handle = mysql_real_escape_string($_REQUEST['handle']);
+    $handle = $GLOBALS['db']->real_escape_string($_REQUEST['handle']);
     
   // See if the handle already exists
-    $query = mysql_query('SELECT * FROM users WHERE handle="'.$handle.'"');
-    if (mysql_numrows($query) > 0) {
-      $user = mysql_fetch_object($query);
+    $query = $GLOBALS['db']->query('SELECT * FROM users WHERE handle="'.$handle.'"');
+    if ($query->num_rows > 0) {
+      $user = $query->fetch_object();
       $userId = $user->id;
       $_SESSION['userId'] = $userId;
       $_SESSION['superuser'] = $user->superuser == 1 ? true : false;
     }
   // Doesn't exist, create a new one
     else {
-      $query = mysql_query('INSERT INTO users SET handle="'.$handle.'"');
+      $query = $GLOBALS['db']->query('INSERT INTO users SET handle="'.$handle.'"');
       if ($query) {
-        $userId = mysql_insert_id();
+        $userId = $GLOBALS['db']->insert_id();
         $_SESSION['userId'] = $userId;
         $_SESSION['superuser'] = false;
       }
       else {
-        echo 'Could not create new user: '.mysql_error();
+        echo 'Could not create new user: '.$GLOBALS['db']->error();
         exit;
       }
     }
@@ -75,15 +76,15 @@
   }
   
   function printRows($videoId, $userId) {
-    $query = mysql_query('SELECT * FROM rows WHERE videoId='.mysql_real_escape_string($videoId).' ORDER BY timecode');
-    while ($log = mysql_fetch_object($query)) {
-      $commentQuery = mysql_query('SELECT * FROM comments WHERE rowId='.$log->id);
-      $commentCount = mysql_num_rows($commentQuery);
+    $query = $GLOBALS['db']->query('SELECT * FROM rows WHERE videoId='.$GLOBALS['db']->real_escape_string($videoId).' ORDER BY timecode');
+    while ($log = $query->fetch_object()) {
+      $commentQuery = $GLOBALS['db']->query('SELECT * FROM comments WHERE rowId='.$log->id);
+      $commentCount = $commentQuery->num_rows;
       
-      $likeQuery = mysql_query('SELECT * FROM likes WHERE rowId='.$log->id);
-      $likeCount = mysql_num_rows($likeQuery);
+      $likeQuery = $GLOBALS['db']->query('SELECT * FROM likes WHERE rowId='.$log->id);
+      $likeCount = $likeQuery->num_rows;
       $likeButton = '<button class="like">Like</button>';
-      while ($like = mysql_fetch_object($likeQuery)) {
+      while ($like = $likeQuery->fetch_object()) {
         if ($like->userId == $userId) {
           $likeButton = '<button class="like liked" id="like'.$like->id.'">Liked</button>';
           break;
@@ -104,8 +105,8 @@
     }
   }
   function printVideoSrc($videoId) {
-    $query = mysql_query('SELECT src FROM videos WHERE id='.mysql_real_escape_string($videoId));
-    print str_replace('.mp4', '', mysql_fetch_object($query)->src);
+    $query = $GLOBALS['db']->query('SELECT src FROM videos WHERE id='.$GLOBALS['db']->real_escape_string($videoId));
+    print str_replace('.mp4', '', $query->fetch_object()->src);
   }
 
   include(dirname(__FILE__) . '/video.php');
