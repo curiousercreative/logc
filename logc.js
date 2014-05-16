@@ -809,7 +809,7 @@ $(document).ready(function () {
     $(window).keydown(function (e) {
       if (keys.indexOf(e.which) != -1) {        
       // Special hotkey combos that are always accessible
-        if (e.shiftKey && e.metaKey) {
+        if (e.shiftKey && e.metaKey || e.ctrlKey) {
           switch (e.which) {
             case 83: //s save to remote db
               e.preventDefault();
@@ -819,7 +819,7 @@ $(document).ready(function () {
         }
       
       // hotkeys that are only accessible when field isn't being edited or when hotkey combo is used
-        if ( !editingField || (e.metaKey && e.shiftKey) ) {
+        if ( !editingField || (e.metaKey || e.ctrlKey && e.shiftKey) ) {
           switch (e.which) {
             case 65: //a
               new log.Row('log');
@@ -850,12 +850,12 @@ $(document).ready(function () {
               e.preventDefault();
               return;
             case 37: //<-
-              if (!editingField && e.shiftKey && !e.metaKey) player.rr(30);
+              if (!editingField && e.shiftKey && !e.metaKey && !e.ctrlKey) player.rr(30);
               else player.rr();
               e.preventDefault();
               return;
             case 39: //->
-              if (!editingField && e.shiftKey && !e.metaKey) player.ff(30);
+              if (!editingField && e.shiftKey && !e.metaKey && !e.ctrlKey) player.ff(30);
               else player.ff();
               e.preventDefault();
               return;
