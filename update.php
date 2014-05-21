@@ -1,4 +1,8 @@
 <?php
+    function winstons_real_escape_string($str) {
+        return $GLOBALS['db']->real_escape_string($str);
+    }
+    
     class Response {
         public $queries = array();
         public $error = false;
@@ -99,13 +103,13 @@
             $fields['videoId'] = $create['videoId'];
         
         // Build our query    
-            $values = array_map('mysqli::real_escape_string', array_values($fields));
+            $values = array_map('winstons_real_escape_string', array_values($fields));
             $keys = array_keys($fields);
             $query = 'INSERT INTO `'.$table.'` (`'.implode('`,`', $keys).'`) VALUES (\''.implode('\',\'', $values).'\')';
         
         // execute the query
             if ($GLOBALS['db']->query($query)) {
-                $id = $GLOBALS['db']->insert_id();
+                $id = $GLOBALS['db']->insert_id;
                 $responseFields = array('oldId'=>$create['id'], 'id'=>$id, 'type'=>$create['type'], 'action'=>'create');
                 switch($create['type']) {
                     case 'like':
@@ -175,7 +179,7 @@
         }
         
     // make sure a guest isn't trying to make updates.
-        if (!function_exists(session_status) || session_status() == PHP_SESSION_NONE) session_start();
+        if (!function_exists('session_status') || session_status() == PHP_SESSION_NONE) session_start();
         if (!isset($_SESSION['userId']) || empty($_SESSION['userId']) || $_SESSION['userId'] == 0) {
             echo 'only users with handles can update DB';
             exit;
