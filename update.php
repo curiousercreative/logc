@@ -26,7 +26,7 @@
     function connect() {
         include_once('preferences.php');
         $db = new mysqli($preferences->db->host, $preferences->db->user, $preferences->db->pass, $preferences->db->name);
-        echo mysqli_connect_error();
+        //echo mysqli_connect_error();
         return $db;
     }
     function update($updates) {
