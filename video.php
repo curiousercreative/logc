@@ -24,9 +24,9 @@
     
       <div class="half col" id="legend">
         <h1>Legend</h1>
-        *Hold ctrl or cmd while editing a log or transcription note to access these hotkeys
-        *Playback speeds will reset to a default playback speed on pause. You can manually
-        set this default in the top right of the video
+        *Hold ctrl/cmd + shift to access these hotkeys
+        *Playback speeds reset to default playback speed on pause.
+        You can set default playback speed in the top right of the video player.
         <dl>
           <dt>j</dt>
             <dd>decrease playback speed 10%</dd>

@@ -819,7 +819,11 @@ $(document).ready(function () {
         }
       
       // hotkeys that are only accessible when field isn't being edited or when hotkey combo is used
-        if ( !editingField || (e.metaKey || e.ctrlKey && e.shiftKey) ) {
+        if (
+            !editingField || // if field isn't being edited, make the hotkeys directly available
+            (e.metaKey || e.ctrlKey) || // if browser will support just using a single modifier key
+            (e.metaKey || e.ctrlKey && e.shiftKey) // for browsers that require a second modifier key
+        ) {
           switch (e.which) {
             case 65: //a
               new log.Row('log');
