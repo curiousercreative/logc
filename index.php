@@ -1,15 +1,15 @@
 <?php
   session_start();
-  
+
   include_once('update.php');
   $GLOBALS['db'] = connect();
   $db = &$GLOBALS['db'];
-  
+
 // Decide what to show
 // Logging in/creating an account request
   if (isset($_REQUEST['handle']) && !empty($_REQUEST['handle'])) {
     $handle = $GLOBALS['db']->real_escape_string($_REQUEST['handle']);
-    
+
   // See if the handle already exists
     $query = $GLOBALS['db']->query('SELECT * FROM users WHERE handle="'.$handle.'"');
     if ($query->num_rows > 0) {
@@ -31,16 +31,22 @@
         exit;
       }
     }
-    
+
     header('Location: /'.$_REQUEST['videoId']);
     exit;
   }
-// Story 
+  // logout
+  else if (isset($_REQUEST['videoId']) && $_REQUEST['videoId'] === 'logout') {
+    session_destroy();
+    header('Location: /');
+    exit;
+  }
+// Story
 // Index of all videos
   else if (!isset($_REQUEST['videoId']) || empty($_REQUEST['videoId'])) {
     include(dirname(__FILE__) . '/videos.php');
     exit;
-  }  
+  }
 // Video page
   else if (isset($_SESSION['userId'])) {
     $userId = $_SESSION['userId'];
@@ -51,36 +57,36 @@
     include(dirname(__FILE__) . '/login.php');
     exit;
   }
-  
+
   function formatTimecode($secs) {
   // hours
     $hours = intval($secs/3600);
     $hours = $hours > 9 ? $hours : "0".$hours;
     $secs -= $hours*3600;
-    
+
   // $minutes
     $minutes = intval($secs/60);
     $minutes = $minutes > 9 ? $minutes : "0".$minutes;
     $secs -= $minutes*60;
-    
+
   // $seconds
     $seconds = intval($secs);
     $seconds = $seconds > 9 ? $seconds : "0".$seconds;
     $secs -= $seconds;
-    
+
   // $frames
     $frames = round(24*$secs);
     $frames = $frames > 9 ? $frames : "0".$frames;
-    
+
     return $hours.":".$minutes.":".$seconds.":".$frames;
   }
-  
+
   function printRows($videoId, $userId) {
     $query = $GLOBALS['db']->query('SELECT * FROM rows WHERE videoId='.$GLOBALS['db']->real_escape_string($videoId).' ORDER BY timecode');
     while ($log = $query->fetch_object()) {
       $commentQuery = $GLOBALS['db']->query('SELECT * FROM comments WHERE rowId='.$log->id);
       $commentCount = $commentQuery->num_rows;
-      
+
       $likeQuery = $GLOBALS['db']->query('SELECT * FROM likes WHERE rowId='.$log->id);
       $likeCount = $likeQuery->num_rows;
       $likeButton = '<button class="like">Like</button>';
