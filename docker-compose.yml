@@ -4,7 +4,8 @@ services:
     build:
       context: .
       dockerfile: ./docker/node.Dockerfile
-    command: pm2-runtime start /usr/src/logc/server/index.js -i 2
+    # command: pm2-runtime start /usr/src/logc/server/index.js -i 2
+    command: nodemon /usr/src/logc/server/index.js
     stdin_open: true
     tty: true
     restart: unless-stopped
