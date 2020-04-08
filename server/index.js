@@ -1,15 +1,14 @@
 const express = require('express');
 const http = require('http');
 const PubSub = require('pubsub-js');
-const redis = require('redis');
 const WebSocket = require('ws');
 const url = require('url');
 
-const REDIS_CONFIG = { host: 'redis' };
+const redis = require('./lib/redis.js');
+
+const Video = require('./models/Video.js');
 
 const app = express();
-const redisClient = redis.createClient(REDIS_CONFIG);
-const redisSub = redis.createClient(REDIS_CONFIG);
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ noServer: true });
 const port = 3000;
@@ -23,19 +22,18 @@ wss.on('connection', function connection(ws) {
   ws.send('cool, a connection');
 
   ws.on('message', msg => {
-    redisClient.publish('ws', msg);
+    redis.client.publish('ws', msg);
   });
-
   ws.on('close', () => {
-    redisClient.publish('ws', 'ws closed');
+    redis.client.publish('ws', 'ws closed');
     PubSub.unsubscribe(unsubToken);
   });
 });
 
-redisSub.on('message', (channel, msg) => {
+redis.subscriber.on('message', (channel, msg) => {
   PubSub.publish(channel, msg);
 });
-redisSub.subscribe('ws');
+redis.subscriber.subscribe('ws');
 
 server.on('upgrade', function upgrade(request, socket, head) {
   const pathname = url.parse(request.url).pathname;
@@ -57,5 +55,9 @@ app.get('/', (req, res) => res.send(`
     ws.onmessage = ({ data }) => document.write(data);
   </script>
 `));
+
+app.get('/video/:id?', (req, res) => {
+  Video.get(req.params.id).then(video => res.json(video));
+});
 
 server.listen(port);

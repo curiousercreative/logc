@@ -4,9 +4,9 @@
   "description": "A platform to collaboratively log, transcribe and discuss both source video and edited video for community video projects",
   "main": "./server/index.js",
   "scripts": {
-    "dev": "next",
-    "build": "next build",
-    "next": "next start",
+    "dev": "next client/src",
+    "build": "next build client/src",
+    "next": "next start client/src",
     "start": "node ./server/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
