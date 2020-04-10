@@ -6,6 +6,7 @@ const url = require('url');
 
 const redis = require('./lib/redis.js');
 
+const StoryApi = require('./api/StoryApi.js');
 const Video = require('./models/Video.js');
 
 const app = express();
@@ -48,6 +49,7 @@ server.on('upgrade', function upgrade(request, socket, head) {
 });
 
 // ==== API server
+app.use(express.json());
 app.get('/', (req, res) => res.send(`
   Hello World!
   <script type="text/javascript">
@@ -56,8 +58,43 @@ app.get('/', (req, res) => res.send(`
   </script>
 `));
 
-app.get('/video/:id?', (req, res) => {
-  Video.get(req.params.id).then(video => res.json(video));
-});
+function handleGetWithModel (model) {
+  return (req, res) => {
+    return model.get(req.params).then(data => res.json(data));
+  }
+}
+
+function handlePostWithModel (model, method) {
+  return (req, res) => {
+    return model.post(req.params, req.body).then(data => res.json(data));
+  }
+}
+
+function handlePutWithModel (model, method) {
+  return (req, res) => {
+    return model.put(req.params, req.body).then(data => res.json(data));
+  }
+}
+
+function handlePatchWithModel (model, method) {
+  return (req, res) => {
+    return model.patch(req.params, req.body).then(data => res.json(data));
+  }
+}
+// TODO: authorization middleware
+// TODO: request cleaning middleware
+// TODO: request validation middleware
+// TODO: can/should cache be middleware?
+
+app.route('/story/:id?')
+  .get(handleGetWithModel(StoryApi))
+  .post(handlePostWithModel(StoryApi));
+app.put('/story/:id', handlePutWithModel(StoryApi));
+app.patch('/story/', handlePutWithModel(StoryApi));
+
+app.route('/video/:id?')
+  .get(handleGetWithModel(Video))
+  .post(handlePostWithModel(Video))
+  .put(handlePutWithModel(Video));
 
 server.listen(port);
