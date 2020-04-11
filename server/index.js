@@ -8,7 +8,8 @@ const redis = require('./lib/redis.js');
 
 const RowApi = require('./api/RowApi.js');
 const StoryApi = require('./api/StoryApi.js');
-const Video = require('./models/Video.js');
+const StrapiWebhookApi = require('./api/StrapiWebhookApi.js');
+const VideoApi = require('./api/VideoApi.js');
 
 const app = express();
 const server = http.createServer(app);
@@ -59,45 +60,16 @@ app.get('/', (req, res) => res.send(`
   </script>
 `));
 
-function handleGetWithModel (model) {
-  return (req, res) => {
-    return model.get(req.params).then(data => res.json(data));
-  }
-}
-
-function handlePostWithModel (model, method) {
-  return (req, res) => {
-    return model.post(req.params, req.body).then(data => res.json(data));
-  }
-}
-
-function handlePutWithModel (model, method) {
-  return (req, res) => {
-    return model.put(req.params, req.body).then(data => res.json(data));
-  }
-}
-
-function handlePatchWithModel (model, method) {
-  return (req, res) => {
-    return model.patch(req.params, req.body).then(data => res.json(data));
-  }
-}
 // TODO: authorization middleware
 // TODO: request cleaning middleware
 // TODO: request validation middleware
 // TODO: can/should cache be middleware?
 
-app.route('/story/:id?')
-  .get(handleGetWithModel(StoryApi))
-  .post(handlePostWithModel(StoryApi));
-app.put('/story/:id', handlePutWithModel(StoryApi));
-app.patch('/story/', handlePutWithModel(StoryApi));
 
-app.route('/video/:id?')
-  .get(handleGetWithModel(Video))
-  .post(handlePostWithModel(Video))
-  .put(handlePutWithModel(Video));
-
+app.all('/story/:id?', StoryApi.handleRoute.bind(StoryApi));
 app.all('/video/:video_id/row/', RowApi.handleRoute.bind(RowApi));
+app.all('/video/:id?', VideoApi.handleRoute.bind(VideoApi));
+
+app.post('/strapi-webhook', StrapiWebhookApi.post.bind(StrapiWebhookApi))
 
 server.listen(port);

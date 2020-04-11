@@ -8,7 +8,7 @@ module.exports = class Video extends Model {
     '/videos/:id',
   ]
   static dbFields = [
-    [ 'id', dataTypes.bigint ]
+    [ 'id', dataTypes.bigint ],
     [ 'src', dataTypes.varchar ],
     [ 'title', dataTypes.varchar ],
   ];

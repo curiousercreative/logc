@@ -6,8 +6,6 @@ services:
       dockerfile: ./docker/node.Dockerfile
     # command: pm2-runtime start /usr/src/logc/server/index.js -i 2
     command: nodemon /usr/src/logc/server/index.js
-    stdin_open: true
-    tty: true
     restart: unless-stopped
     volumes:
       - ./:/usr/src/logc:delegated
@@ -15,7 +13,7 @@ services:
       - db
       - redis
     ports:
-      - 3000:3000
+      - 3001:3000
   db:
     image: postgres
     restart: unless-stopped
@@ -30,3 +28,8 @@ services:
     restart: unless-stopped
     expose:
       - "6379"
+  cms:
+    image: strapi/strapi
+    restart: unless-stopped
+    ports:
+      - 1337:1337

@@ -86,7 +86,7 @@ class Model {
     // add item expiration
     if (this.cacheKey && exists(id)) expirations.push(apiCache.expireObject(this.getCacheKey(id)));
     // add any HTTP cache expiration requests
-    if (this.cacheRoutes.length) expiractions.push(...apiCache.expireHttp(this.cacheRoutes));
+    if (Array.isArray(this.cacheRoutes) && this.cacheRoutes.length) expiractions.push(...apiCache.expireHttp(this.cacheRoutes));
 
     return expirations.length ? Promise.all(expirations) : Promise.resolve();
   }
@@ -176,7 +176,8 @@ class Model {
       collection = [ collection ];
     }
 
-    const fields = this.dbFields;
+    // const fields = this.dbFields;
+    const fields = this.dbFields.filter(([ f ]) => collection.some(item => f in item));
     const columns = getColumnsForUpdate(fields.filter(([ f ]) => f !== this.dbPrimaryKey), 'b');
     const values = collection
       .map(item => getValues(fields, item))
@@ -186,13 +187,12 @@ class Model {
       `UPDATE ${this.dbFrom}
         AS a SET ${columns.join(', ')}
       FROM (VALUES ${values.join(', ')})
-        AS b(${fields.join(', ')})
+        AS b(${fields.map(([ f ]) => f).join(', ')})
       WHERE b.id = a.id
-      RETURNING ${fields.map(f => `b.${f}`).join(', ')}`;
+      RETURNING ${fields.map(([ f ]) => `b.${f}`).join(', ')}`;
 
     return db
       .query(query)
-      .then(tap(console.log))
       .then(res => isSingleRow ? res.rows[0] : res.rows);
       // TODO: update cache
   }
