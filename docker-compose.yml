@@ -33,3 +33,10 @@ services:
     restart: unless-stopped
     ports:
       - 1337:1337
+  varnish:
+    image: varnish
+    restart: unless-stopped
+    volumes:
+      - ./config/varnish/default.vcl:/etc/varnish/default.vcl:ro
+    ports:
+      - 8080:80

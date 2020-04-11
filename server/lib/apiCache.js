@@ -3,14 +3,19 @@ const fetch = require('unfetch');
 const { promisify } = require('util');
 
 const redis = require('./redis.js');
-const VARNISH_BASE_URL = 'http://localhost';
+const VARNISH_URL = 'http://varnish/purge';
 
 // TODO: consider some form of connection optimization for Varnish purging
 function expireHttp (paths) {
   if (!Array.isArray(paths) || !paths.length) return Promise.resolve();
 
   return Promise.all(
-    paths.map(path => fetch(`${VARNISH_BASE_URL}${path}`, 'PURGE')),
+    paths.map(path => fetch(VARNISH_URL, {
+      headers: {
+        'X-Purge-Regex': path,
+      },
+      method: 'PURGE',
+    })),
   );
 }
 
