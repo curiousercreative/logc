@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "next client/src",
     "build": "next build client/src",
+    "migrate": "node ./server/data/migrate.js",
     "next": "next start client/src",
+    "rollback": "node ./server/data/rollback.js",
     "start": "node ./server/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
