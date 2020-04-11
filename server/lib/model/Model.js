@@ -5,6 +5,7 @@ const db = require('../db.js');
 const tap = require('../../../shared/util/tap.js');
 const {
   getColumnsForUpdate,
+  getSelectWhere,
   getValues,
   stringifyFields,
   stringifyValues,
@@ -60,12 +61,11 @@ class Model {
 
     // filter out primary key from fields
     const dbFields = this.dbFields.filter(([ key ]) => key !== this.dbPrimaryKey);
-    const fields = dbFields.map(([ key ]) => key);
     const values = collection
       .map(item => getValues(dbFields, item))
       .map(values => stringifyValues(dbFields, values));
     let query = `
-      INSERT INTO ${this.dbFrom} ${stringifyFields(fields)}
+      INSERT INTO ${this.dbFrom} ${stringifyFields(dbFields)}
         VALUES ${values.join(', ')}
         RETURNING ${this.dbFields.map(([ key ]) => key).join(', ')}`;
 
@@ -95,15 +95,15 @@ class Model {
    * @param  {string} [id]
    * @return {promise} resolves with requested resource(s)
    */
-  static fetch (id) {
-    let query = `SELECT * FROM ${this.dbFrom}`;
+  static fetch (urlParams = {}) {
+    const where = getSelectWhere(this.dbFields, urlParams);
+    let query = `SELECT * FROM ${this.dbFrom}${where}`;
 
-    if (exists(id)) query += ` WHERE id = ${id}`;
     if (exists(this.dbOrderBy)) query += ` ORDER BY ${this.dbOrderBy}`;
 
     return db
       .query(query)
-      .then(res => exists(id) ? res.rows[0] : res.rows);
+      .then(res => exists(urlParams.id) ? res.rows[0] : res.rows);
   }
 
   /**
@@ -114,13 +114,13 @@ class Model {
   static get (urlParams, useCache = true) {
     const id = this.id(urlParams);
 
-    if (!useCache) return this.fetch(id);
+    if (!useCache) return this.fetch(urlParams);
 
     return this.cacheGet(id).then(cachedVal => exists(cachedVal)
         // found cached value
         ? cachedVal
         // fetch and write to cache without waiting for response
-        : this.fetch(id).then(tap(val => this.cacheSet(id, val)))
+        : this.fetch(urlParams).then(tap(val => this.cacheSet(id, val)))
       );
   }
 
@@ -176,11 +176,11 @@ class Model {
       collection = [ collection ];
     }
 
-    const fields = this.dbFields.map(([ key ]) => key);
-    const columns = getColumnsForUpdate(fields.filter(f => f !== this.dbPrimaryKey), 'b');
+    const fields = this.dbFields;
+    const columns = getColumnsForUpdate(fields.filter(([ f ]) => f !== this.dbPrimaryKey), 'b');
     const values = collection
-      .map(item => getValues(this.dbFields, item))
-      .map(values => stringifyValues(this.dbFields, values));
+      .map(item => getValues(fields, item))
+      .map(values => stringifyValues(fields, values));
 
     let query =
       `UPDATE ${this.dbFrom}

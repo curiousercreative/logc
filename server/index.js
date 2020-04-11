@@ -6,6 +6,7 @@ const url = require('url');
 
 const redis = require('./lib/redis.js');
 
+const RowApi = require('./api/RowApi.js');
 const StoryApi = require('./api/StoryApi.js');
 const Video = require('./models/Video.js');
 
@@ -96,5 +97,7 @@ app.route('/video/:id?')
   .get(handleGetWithModel(Video))
   .post(handlePostWithModel(Video))
   .put(handlePutWithModel(Video));
+
+app.all('/video/:video_id/row/', RowApi.handleRoute.bind(RowApi));
 
 server.listen(port);
