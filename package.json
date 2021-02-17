@@ -1,0 +1,37 @@
+{
+  "name": "logc.curiousercreative.com",
+  "version": "0.1.0",
+  "description": "A platform to collaboratively log, transcribe and discuss both source video and edited video for community video projects",
+  "main": "./server/index.js",
+  "scripts": {
+    "dev": "next client/src",
+    "build": "next build client/src",
+    "migrate": "node ./server/data/migrate.js",
+    "next": "next start client/src",
+    "rollback": "node ./server/data/rollback.js",
+    "start": "node ./server/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/curiousercreative/logc.git"
+  },
+  "author": "Winston Hoy",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/curiousercreative/logc/issues"
+  },
+  "homepage": "https://github.com/curiousercreative/logc#readme",
+  "dependencies": {
+    "express": "^4.17.1",
+    "functional.js": "^0.8.0",
+    "next": "^9.3.4",
+    "pg": "^8.0.0",
+    "pubsub-js": "^1.8.0",
+    "react": "^16.13.1",
+    "react-dom": "^16.13.1",
+    "redis": "^3.0.2",
+    "unfetch": "^4.1.0",
+    "ws": "^7.2.3"
+  }
+}
