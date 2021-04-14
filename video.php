@@ -1,7 +1,7 @@
 <html>
   <head>
     <title>LogC - Community video logging</title>
-    <script src="http://code.jquery.com/jquery-1.10.2.min.js"></script>
+    <script src="//code.jquery.com/jquery-1.10.2.min.js"></script>
     <script src="footable/footable.js"></script>
     <script src="logc.js"></script>
 
