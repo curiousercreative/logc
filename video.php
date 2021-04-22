@@ -24,7 +24,7 @@
 
       <div class="half col" id="legend">
         <h1>Legend</h1>
-        <div>*Hold ctrl/cmd + shift to access these hotkeys</div>
+        <div>*Hold ctrl/cmd (+ shift in FireFox) to access these hotkeys</div>
         <div>*Playback speeds reset to default playback speed on pause.
         You can set default playback speed in the top right of the video player.</div>
         <dl>
