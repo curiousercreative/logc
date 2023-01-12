@@ -82,7 +82,7 @@
   }
 
   function printRows($videoId, $userId) {
-    $query = $GLOBALS['db']->query('SELECT * FROM rows WHERE videoId='.$GLOBALS['db']->real_escape_string($videoId).' ORDER BY timecode');
+    $query = $GLOBALS['db']->query('SELECT * FROM `rows` WHERE videoId='.$GLOBALS['db']->real_escape_string($videoId).' ORDER BY timecode');
     while ($log = $query->fetch_object()) {
       $commentQuery = $GLOBALS['db']->query('SELECT * FROM comments WHERE rowId='.$log->id);
       $commentCount = $commentQuery->num_rows;
